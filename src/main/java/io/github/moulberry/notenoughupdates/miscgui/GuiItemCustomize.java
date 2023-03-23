@@ -53,10 +53,8 @@ public class GuiItemCustomize extends GuiScreen {
 	private static final ResourceLocation RESET = new ResourceLocation("notenoughupdates:itemcustomize/reset.png");
 
 	private final ItemStack stack;
-	private ItemStack customItemStack;
 	private final String itemUUID;
 	private final GuiElementTextField textFieldRename = new GuiElementTextField("", 158, 20, GuiElementTextField.COLOUR);
-	private final GuiElementTextField textFieldCustomItem = new GuiElementTextField("", 180, 20, GuiElementTextField.COLOUR);
 	private final GuiElementBoolean enchantGlintButton;
 
 	private int renderHeight = 0;
@@ -67,15 +65,13 @@ public class GuiItemCustomize extends GuiScreen {
 	private String customGlintColour = null;
 
 	private String customLeatherColour = null;
-	private boolean supportCustomLeatherColour;
-	private String lastCustomItem = "";
+	private final boolean supportCustomLeatherColour;
 
 	private GuiElement editor = null;
 
 	public GuiItemCustomize(ItemStack stack, String itemUUID) {
 		this.stack = stack;
 		this.itemUUID = itemUUID;
-		this.customItemStack = copy(stack);
 
 		IBakedModel model = Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(stack);
 		boolean stackHasEffect = stack.hasEffect() && !model.isBuiltInRenderer();
@@ -86,20 +82,14 @@ public class GuiItemCustomize extends GuiScreen {
 			if (data.customName != null) {
 				textFieldRename.setText(data.customName);
 			}
-			if (data.customItem != null && data.customItem.length() > 0) {
-				textFieldCustomItem.setText(data.customItem);
-			} else {
-				textFieldCustomItem.setText(stack.getItem().getRegistryName().replace("minecraft:", ""));
-			}
 			this.customGlintColour = data.customGlintColour;
 			this.customLeatherColour = data.customLeatherColour;
 		} else {
 			this.enchantGlint = stackHasEffect;
-			textFieldCustomItem.setText(stack.getItem().getRegistryName().replace("minecraft:", ""));
 		}
 
-		supportCustomLeatherColour = customItemStack.getItem() instanceof ItemArmor &&
-			((ItemArmor) customItemStack.getItem()).getArmorMaterial() == ItemArmor.ArmorMaterial.LEATHER;
+		supportCustomLeatherColour = stack.getItem() instanceof ItemArmor &&
+			((ItemArmor) stack.getItem()).getArmorMaterial() == ItemArmor.ArmorMaterial.LEATHER;
 
 		enchantGlintCustomColourAnimation.setValue(enchantGlint ? 17 : 0);
 		this.enchantGlintButton = new GuiElementBoolean(0, 0, () -> enchantGlint, (bool) -> {
@@ -115,7 +105,7 @@ public class GuiItemCustomize extends GuiScreen {
 	}
 
 	public String getChromaStrFromLeatherColour() {
-		return ChromaColour.special(0, 0xff, ((ItemArmor) customItemStack.getItem()).getColor(customItemStack));
+		return ChromaColour.special(0, 0xff, ((ItemArmor) stack.getItem()).getColor(stack));
 	}
 
 	public void updateData() {
@@ -123,9 +113,6 @@ public class GuiItemCustomize extends GuiScreen {
 
 		IBakedModel model = Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(stack);
 		boolean stackHasEffect = stack.hasEffect() && !model.isBuiltInRenderer();
-
-		this.customItemStack = copy(stack);
-		data.defaultItem = stack.getItem().getRegistryName();
 
 		if (this.enchantGlint != stackHasEffect) {
 			data.overrideEnchantGlint = true;
@@ -140,8 +127,8 @@ public class GuiItemCustomize extends GuiScreen {
 			data.customGlintColour = null;
 		}
 
-		if (this.customLeatherColour != null && (!(customItemStack.getItem() instanceof ItemArmor) || !this.customLeatherColour.equals(
-			getChromaStrFromLeatherColour()))) {
+		if (supportCustomLeatherColour && this.customLeatherColour != null && !this.customLeatherColour.equals(
+			getChromaStrFromLeatherColour())) {
 			data.customLeatherColour = this.customLeatherColour;
 		} else {
 			data.customLeatherColour = null;
@@ -170,20 +157,7 @@ public class GuiItemCustomize extends GuiScreen {
 			}
 		}
 
-		if (!this.textFieldCustomItem.getText().isEmpty()) {
-			data.customItem = this.textFieldCustomItem.getText();
-		}
-
 		ItemCustomizeManager.putItemData(itemUUID, data);
-	}
-
-	private ItemStack copy(ItemStack stack) {
-		ItemStack customStack = stack.copy();
-		if (!this.textFieldCustomItem.getText().isEmpty()) {
-			customStack.setItem(ItemCustomizeManager.getCustomItem(stack, this.textFieldCustomItem.getText().trim()));
-			customStack.setItemDamage(ItemCustomizeManager.getCustomItemDamage(stack));
-		}
-		return customStack;
 	}
 
 	private int getGlintColour() {
@@ -197,7 +171,7 @@ public class GuiItemCustomize extends GuiScreen {
 		if (!supportCustomLeatherColour) return 0xff000000;
 
 		int col =
-			customLeatherColour == null ? ((ItemArmor) customItemStack.getItem()).getColor(customItemStack) : ChromaColour.specialToChromaRGB(
+			customLeatherColour == null ? ((ItemArmor) stack.getItem()).getColor(stack) : ChromaColour.specialToChromaRGB(
 				customLeatherColour);
 		return 0xff000000 | col;
 	}
@@ -214,7 +188,7 @@ public class GuiItemCustomize extends GuiScreen {
 		int yTopStart = (scaledResolution.getScaledHeight() - renderHeight) / 2;
 		int yTop = yTopStart;
 
-		RenderUtils.drawFloatingRectDark(xCenter - 100, yTop - 9, 200, renderHeight + 33);
+		RenderUtils.drawFloatingRectDark(xCenter - 100, yTop - 9, 200, renderHeight + 11);
 
 		RenderUtils.drawFloatingRectDark(xCenter - 90, yTop - 5, 180, 14);
 		Utils.renderShadowedString("\u00a75\u00a7lNEU Item Customizer", xCenter, yTop - 1, 180);
@@ -237,7 +211,6 @@ public class GuiItemCustomize extends GuiScreen {
 		}
 
 		textFieldRename.render(xCenter - textFieldRename.getWidth() / 2 - 10, yTop);
-		int yTopText = yTop;
 
 		Minecraft.getMinecraft().getTextureManager().bindTexture(GuiTextures.help);
 		GlStateManager.color(1, 1, 1, 1);
@@ -287,8 +260,7 @@ public class GuiItemCustomize extends GuiScreen {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(xCenter - 48, yTop + 7, 0);
 		GlStateManager.scale(6, 6, 1);
-		this.customItemStack = copy(stack);
-		Utils.drawItemStack(customItemStack, 0, 0);
+		Utils.drawItemStack(stack, 0, 0);
 		GlStateManager.popMatrix();
 
 		yTop += 115;
@@ -336,9 +308,6 @@ public class GuiItemCustomize extends GuiScreen {
 			yTop += enchantGlintCustomColourAnimation.getValue() + 3;
 		}
 
-		supportCustomLeatherColour = customItemStack.getItem() instanceof ItemArmor &&
-			((ItemArmor) customItemStack.getItem()).getArmorMaterial() == ItemArmor.ArmorMaterial.LEATHER;
-
 		if (supportCustomLeatherColour) {
 			int leatherColour = getLeatherColour();
 
@@ -378,32 +347,6 @@ public class GuiItemCustomize extends GuiScreen {
 
 
         }*/
-
-		if (!lastCustomItem.equals(textFieldCustomItem.getText())) {
-			updateData();
-		}
-		lastCustomItem = textFieldCustomItem.getText();
-
-		if (!textFieldCustomItem.getFocus() && textFieldCustomItem.getText().isEmpty()) {
-			textFieldCustomItem.setOptions(GuiElementTextField.SCISSOR_TEXT);
-			textFieldCustomItem.setPrependText("\u00a77Enter Custom Item ID...");
-		} else {
-			textFieldCustomItem.setOptions(GuiElementTextField.COLOUR | GuiElementTextField.SCISSOR_TEXT);
-			textFieldCustomItem.setPrependText("");
-		}
-
-		if (!textFieldCustomItem.getFocus()) {
-			textFieldCustomItem.setSize(180, 20);
-		} else {
-			int textSize = fontRendererObj.getStringWidth(textFieldCustomItem.getTextDisplay()) + 10;
-			textFieldCustomItem.setSize(Math.max(textSize, 180), 20);
-		}
-
-		int offset = 200;
-		if (!supportCustomLeatherColour) offset -= 20;
-		if (!enchantGlint) offset -= 16;
-
-		textFieldCustomItem.render(xCenter - textFieldCustomItem.getWidth() / 2 - 10 + 11, yTopText + offset);
 
 		renderHeight = yTop - yTopStart;
 
@@ -446,16 +389,6 @@ public class GuiItemCustomize extends GuiScreen {
 			}
 		}
 
-		if (textFieldCustomItem.getFocus()) {
-			updateData();
-			if (keyCode == Keyboard.KEY_ESCAPE) {
-				textFieldCustomItem.setFocus(false);
-				return;
-			} else {
-				textFieldCustomItem.keyTyped(typedChar, keyCode);
-			}
-		}
-
 		super.keyTyped(typedChar, keyCode);
 	}
 
@@ -484,7 +417,6 @@ public class GuiItemCustomize extends GuiScreen {
 	@Override
 	protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
 		textFieldRename.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
-		textFieldCustomItem.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
 	}
 
 	@Override
@@ -499,18 +431,6 @@ public class GuiItemCustomize extends GuiScreen {
 			textFieldRename.mouseClicked(mouseX, mouseY, mouseButton);
 		} else {
 			textFieldRename.unfocus();
-		}
-
-		int offset = 200;
-		if (!supportCustomLeatherColour) offset -= 20;
-		if (!enchantGlint) offset -= 18;
-
-		if (mouseX >= xCenter - textFieldCustomItem.getWidth() / 2 - 10 + 11 &&
-			mouseX <= xCenter + textFieldCustomItem.getWidth() / 2 - 10 + 11 &&
-			mouseY >= yTop + offset + 14 && mouseY <= yTop + offset + 14 + textFieldCustomItem.getHeight()) {
-			textFieldCustomItem.mouseClicked(mouseX, mouseY, mouseButton);
-		} else {
-			textFieldCustomItem.unfocus();
 		}
 
 		if (enchantGlint && mouseX >= xCenter - 90 && mouseX <= xCenter + 90 &&

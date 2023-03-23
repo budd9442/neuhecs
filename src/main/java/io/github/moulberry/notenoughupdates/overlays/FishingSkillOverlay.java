@@ -19,33 +19,45 @@
 
 package io.github.moulberry.notenoughupdates.overlays;
 
+import com.mojang.realmsclient.gui.ChatFormatting;
 import io.github.moulberry.notenoughupdates.NotEnoughUpdates;
 import io.github.moulberry.notenoughupdates.core.config.KeybindHelper;
 import io.github.moulberry.notenoughupdates.core.config.Position;
 import io.github.moulberry.notenoughupdates.core.util.lerp.LerpUtils;
+import io.github.moulberry.notenoughupdates.miscfeatures.DiscordWebhook;
+import io.github.moulberry.notenoughupdates.miscfeatures.FishingHelper;
+import io.github.moulberry.notenoughupdates.util.SBInfo;
 import io.github.moulberry.notenoughupdates.util.Utils;
 import io.github.moulberry.notenoughupdates.util.XPInformation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.client.audio.SoundCategory;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Keyboard;
 
+import java.awt.*;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Supplier;
 
 public class FishingSkillOverlay
 	extends TextOverlay { //Im sure there is a much better way to do this besides making another class ¯\_(ツ)_/¯
 
 	private long lastUpdate = -1;
-	private long timer = -1;
+	public static long timer = -1;
 	private int expertiseLast = -1;
 	private int expertise = -1;
 	private int expertiseTier = -1;
@@ -53,7 +65,7 @@ public class FishingSkillOverlay
 	private float fishedPerSecondLast = 0;
 	private float fishedPerSecond = 0;
 	private final LinkedList<Integer> expertiseQueue = new LinkedList<>();
-
+	private int killDelay = 0;
 	private XPInformation.SkillInfo skillInfo = null;
 	private XPInformation.SkillInfo skillInfoLast = null;
 
@@ -176,6 +188,7 @@ public class FishingSkillOverlay
 		if (skillInfo != null) {
 			float totalXp = skillInfo.totalXp;
 
+
 			if (lastTotalXp > 0) {
 				float delta = totalXp - lastTotalXp;
 
@@ -242,7 +255,7 @@ public class FishingSkillOverlay
 	public void updateFrequent() {
 		super.updateFrequent();
 
-		if (expertise < 0) {
+		if (expertise < 0 && !NotEnoughUpdates.INSTANCE.config.skillOverlays.fishingOverlayAlwaysOn) {
 			overlayStrings = null;
 		} else {
 			HashMap<Integer, String> lineMap = new HashMap<>();
@@ -388,12 +401,26 @@ public class FishingSkillOverlay
 				repeatDelay = 0;
 				attenuationType = ISound.AttenuationType.NONE;
 			}};
+			if(NotEnoughUpdates.INSTANCE.config.fishing.delayEditMode) {
+				if (KeybindHelper.isKeyPressed(Keyboard.KEY_UP)) {
+					NotEnoughUpdates.INSTANCE.config.fishing.hookDelay++;
+					Utils.addChatMessage("Hook Delay : " + NotEnoughUpdates.INSTANCE.config.fishing.hookDelay);
 
-			int funnyCustomTimer = 1000 * NotEnoughUpdates.INSTANCE.config.skillOverlays.customFishTimer;
+				}
+				if (KeybindHelper.isKeyPressed(Keyboard.KEY_DOWN)) {
+					NotEnoughUpdates.INSTANCE.config.fishing.hookDelay--;
+					Utils.addChatMessage("Hook Delay : " + NotEnoughUpdates.INSTANCE.config.fishing.hookDelay);
+
+				}
+			}
+			int funnyCustomTimer = 1000 * NotEnoughUpdates.INSTANCE.config.fishing.customFishTimer ;
 			if (KeybindHelper.isKeyPressed(key) && timer != 0 && System.currentTimeMillis() - timer > 1000) {
 				timer = 0;
 			} else if (KeybindHelper.isKeyPressed(key) && timer == 0) {
 				timer = System.currentTimeMillis();
+				if(NotEnoughUpdates.INSTANCE.config.fishing.autoWardrobe){
+					Minecraft.getMinecraft().thePlayer.sendChatMessage("/wardrobe");
+				}
 			}
 			if (timer >= 1) {
 				lineMap.put(
@@ -407,6 +434,61 @@ public class FishingSkillOverlay
 			}
 			if (System.currentTimeMillis() - timer > funnyCustomTimer &&
 				System.currentTimeMillis() - timer < (funnyCustomTimer + 100) && funnyCustomTimer != 0) {
+				if(NotEnoughUpdates.INSTANCE.config.fishing.autoWardrobe){
+					Minecraft.getMinecraft().thePlayer.sendChatMessage("/wardrobe");
+				}
+				if(SBInfo.getInstance().getLocation().equals("crystal_hollows")) {
+					Utils.addChatMessage(ChatFormatting.WHITE + "Killing");
+					this.killDelay = 50;
+					final Timer killTimer = new Timer();
+					TimerTask task1 = new TimerTask() {
+						public void run() {
+							if ((Minecraft.getMinecraft()).thePlayer.getHeldItem().getItem() == Items.fishing_rod &&
+								NotEnoughUpdates.INSTANCE.config.fishing.autoFishing &&
+								NotEnoughUpdates.INSTANCE.config.fishing.autoKilling && !FishingHelper.paused) {
+								(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 1;
+								FishingHelper.rightClick();
+								try {
+									Thread.sleep(1000L);
+								} catch (InterruptedException e) {
+								}
+								(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 0;
+								try {
+									Thread.sleep(800L);
+								} catch (InterruptedException e) {
+								}
+								FishingHelper.rightClick();
+								FishingSkillOverlay.timer = System.currentTimeMillis();
+								try {
+									Thread.sleep(800L);
+
+								} catch (InterruptedException e) {
+								}
+								int count = 0;
+								for (int slot = 0; slot < Minecraft.getMinecraft().thePlayer.inventory.getSizeInventory(); slot++) {
+									ItemStack Stack = Minecraft.getMinecraft().thePlayer.inventory.getStackInSlot(slot);
+
+									if (Stack != null && Stack.getItem().equals(Items.rotten_flesh)) {
+										count += Stack.stackSize;
+									}
+
+								}
+								if (NotEnoughUpdates.INSTANCE.config.discord.wormWebhook) {
+									DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject()
+										.setTitle("Fishing helper")
+										.setDescription("Auto-Kill")
+										.setColor(Color.CYAN)
+										.setThumbnail("https://static.wikia.nocookie.net/minecraft_gamepedia/images/a/ac/Rotten_Flesh_JE3_BE2.png")
+										.addField("Worm Membranes", String.valueOf(count), true);
+									Utils.sendWebhook(embed);
+								}
+								killTimer.cancel();
+							}
+						}
+					};
+					killTimer.schedule(task1, 800L);
+
+				}
 				float oldLevel = Minecraft.getMinecraft().gameSettings.getSoundLevel(SoundCategory.PLAYERS);
 				Minecraft.getMinecraft().gameSettings.setSoundLevel(SoundCategory.PLAYERS, 1);
 				Minecraft.getMinecraft().getSoundHandler().playSound(sound);

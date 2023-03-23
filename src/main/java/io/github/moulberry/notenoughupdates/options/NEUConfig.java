@@ -34,7 +34,9 @@ import io.github.moulberry.notenoughupdates.miscgui.GuiEnchantColour;
 import io.github.moulberry.notenoughupdates.miscgui.GuiInvButtonEditor;
 import io.github.moulberry.notenoughupdates.miscgui.NEUOverlayPlacements;
 import io.github.moulberry.notenoughupdates.options.customtypes.NEUDebugFlag;
+import io.github.moulberry.notenoughupdates.options.seperateSections.Discord;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Garden;
+import io.github.moulberry.notenoughupdates.options.seperateSections.MacroSafety;
 import io.github.moulberry.notenoughupdates.options.seperateSections.WorldConfig;
 import io.github.moulberry.notenoughupdates.options.seperateSections.AHGraph;
 import io.github.moulberry.notenoughupdates.options.seperateSections.AHTweaks;
@@ -89,6 +91,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class NEUConfig extends Config {
+
+
 	public void editOverlay() {
 		final LinkedHashMap<TextOverlay, Position> overlayPositions = new LinkedHashMap<TextOverlay, Position>();
 		for (TextOverlay overlay : OverlayManager.textOverlays) {
@@ -180,6 +184,27 @@ public class NEUConfig extends Config {
 
 	@Expose
 	@Category(
+		name = "Fishing",
+		desc = "Fishing"
+	)
+	public Fishing fishing = new Fishing();
+
+	@Expose
+	@Category(
+		name = "Macro Safety",
+		desc = "Failsafes and safety measures"
+	)
+	public MacroSafety macroSafety = new MacroSafety();
+
+	@Expose
+	@Category(
+		name = "Skill Overlays",
+		desc = "Skill Overlays"
+	)
+	public SkillOverlays skillOverlays = new SkillOverlays();
+
+	@Expose
+	@Category(
 		name = "Misc",
 		desc = "Miscellaneous options which don't fit into any other category"
 	)
@@ -241,12 +266,7 @@ public class NEUConfig extends Config {
 	)
 	public ItemOverlays itemOverlays = new ItemOverlays();
 
-	@Expose
-	@Category(
-		name = "Skill Overlays",
-		desc = "Skill Overlays"
-	)
-	public SkillOverlays skillOverlays = new SkillOverlays();
+
 
 	@Expose
 	@Category(
@@ -290,12 +310,6 @@ public class NEUConfig extends Config {
 	)
 	public Mining mining = new Mining();
 
-	@Expose
-	@Category(
-		name = "Fishing",
-		desc = "Fishing"
-	)
-	public Fishing fishing = new Fishing();
 
 	@Expose
 	@Category(
@@ -303,7 +317,11 @@ public class NEUConfig extends Config {
 		desc = "Garden"
 	)
 	public Garden garden = new Garden();
-
+	@Category(
+		name = "Discord",
+		desc = "Discord"
+	)
+	public Discord discord = new Discord();
 	@Expose
 	@Category(
 		name = "NEU Auction House",

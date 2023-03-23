@@ -26,22 +26,158 @@ import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditor
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorColour;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorDropdown;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorSlider;
+import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorText;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigOption;
 
 public class Fishing {
 	@Expose
 	@ConfigOption(
-		name = "Hide Other Players Fishing",
+		name = "Hide Other Players ",
 		desc = "Convenience option to easily hide \u00a7lother players'\u00a7r bobbers, rod lines and fishing particles\n" +
 			"The advanced options below allow you to set the precise colour, particles, etc."
 	)
 	@ConfigEditorBoolean
 	public boolean hideOtherPlayerAll = false;
 
+	@ConfigOption(name = "Fishing QOL", desc = "")
+	@ConfigEditorAccordion(id = 8)
+	public boolean afkFishingEnabled = false;
+
+	@Expose
+	@ConfigOption(name = "Auto Fishing", desc = "wink wink")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 8)
+	public boolean autoFishing = true;
+
+	@ConfigOption(name = "Fishing delays", desc = "")
+	@ConfigEditorAccordion(id = 10)
+	@ConfigAccordionId(id=8)
+	public boolean fishDelays = false;
+	@Expose
 	@ConfigOption(
-		name = "Incoming Fish Warning",
-		desc = ""
+		name = "Hook delay ( in ticks )",
+		desc = "/editdelay   1 second = 20 ticks "
 	)
+	@ConfigEditorSlider(
+		minValue = 0,
+		maxValue = 20,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 10)
+	public int hookDelay = 10;
+
+	@Expose
+	@ConfigOption(
+		name = "Recast delay ( in ticks )",
+		desc = "1 second = 20 ticks "
+	)
+	@ConfigEditorSlider(
+		minValue = 1,
+		maxValue = 40,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 10)
+	public int recastDelay = 20;
+
+	@Expose
+	@ConfigOption(name = "Auto wardrobe", desc = "open wardrobe when timer rings")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 8)
+	public boolean autoWardrobe = false;
+
+
+	@ConfigOption(name = "Worm Fishing", desc = "")
+	@ConfigEditorAccordion(id = 9)
+	@ConfigAccordionId(id = 8)
+	public boolean wormFishing = false;
+	@Expose
+	@ConfigOption(name = "Auto Kill", desc = "Uses the ability of the weapon in hotbar slot 2 to kill mobs. ")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 9)
+	public boolean autoKilling = false;
+	@Expose
+	@ConfigOption(
+		name = "Auto kill delay",
+		desc = "Change the amount of time ( in seconds ) until auto kill"
+	)
+	@ConfigEditorSlider(
+		minValue = 10,
+		maxValue = 900,
+		minStep = 10
+	)
+	@ConfigAccordionId(id = 9)
+	public int customFishTimer = 300;
+
+
+	@Expose
+	@ConfigOption(name = "Anti-AFK", desc = "Move mouse to bypass AFK tagging")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 8)
+	public boolean antiAFK = false;
+	@Expose
+	@ConfigOption(
+		name = "Mouse move Interval",
+		desc = "Delay between mouse movements ( in seconds )"
+	)
+	@ConfigEditorSlider(
+		minValue = 1,
+		maxValue = 60,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 8)
+	public int antiAFKinterval = 20;
+
+
+
+	@Expose
+	@ConfigOption(name = "Slugfish Mode", desc = "Only catches the fish after 30s")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 8)
+	public boolean slugFishMode = false;
+
+
+	@ConfigOption(name = "Lava fishing", desc = "")
+	@ConfigEditorAccordion(id = 18)
+	public boolean lavaEsp = false;
+
+	@Expose
+	@ConfigOption(name = "Lava ESP", desc = "Warning! unstable asf. use with crashpatch ( unless u wanna crash )")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 18)
+	public boolean lavaESP = false;
+
+	@Expose
+	@ConfigOption(name = "Lava ESP scan radius", desc = "Warning! higher values will case lag")
+	@ConfigEditorSlider(minValue = 1, maxValue = 150, minStep = 1)
+	@ConfigAccordionId(id = 18)
+	public double lavaScanRadius = 50;
+
+	@Expose
+	@ConfigOption(name = "Lava ESP scan interval ( in Ticks )", desc = "Warning! lower intervals will cause lag")
+	@ConfigEditorSlider(minValue = 10, maxValue = 100, minStep = 1)
+	@ConfigAccordionId(id = 18)
+	public int lavaScanInterval = 20;
+	@Expose
+	@ConfigOption(name = "Lava render limit", desc = "")
+	@ConfigEditorSlider(minValue = 100, maxValue = 3000, minStep = 10)
+	@ConfigAccordionId(id = 18)
+	public int lavaLimit = 500;
+	@Expose
+	@ConfigOption(name = "Hide near blocks", desc = "")
+	@ConfigEditorSlider(minValue = 5, maxValue = 100, minStep = 1)
+	@ConfigAccordionId(id = 18)
+	public int nearLimit = 15;
+	@Expose
+	@ConfigOption(
+		name = "Lava ESP Color",
+		desc = "",
+		searchTags = "color"
+	)
+	@ConfigEditorColour
+	@ConfigAccordionId(id = 18)
+	public String lavaColor = "0:255:0:255:0";
+
+	@ConfigOption(name = "Incoming Fish Warning", desc = "")
 	@ConfigEditorAccordion(id = 3)
 	public boolean incomingFishAccordion = false;
 
@@ -304,5 +440,7 @@ public class Fishing {
 	@ConfigEditorBoolean
 	@ConfigAccordionId(id = 7)
 	public boolean trophyRewardTooltips = true;
+
+	public boolean delayEditMode = false;
 
 }

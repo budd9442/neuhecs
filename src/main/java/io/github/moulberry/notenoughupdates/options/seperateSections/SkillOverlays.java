@@ -204,6 +204,14 @@ public class SkillOverlays {
 
 	@Expose
 	@ConfigOption(
+		name = "Fishing overlay always on",
+		desc = "Show the overlay when you're not holding a fishing rod"
+	)
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 3)
+	public boolean fishingOverlayAlwaysOn = false;
+	@Expose
+	@ConfigOption(
 		name = "Fishing Text",
 		desc = "\u00a7eDrag text to change the appearance of the overlay\n" +
 			"\u00a7rHold a fishing rod with expertise enchantment while gaining fishing xp to show the overlay"
@@ -262,18 +270,7 @@ public class SkillOverlays {
 	@ConfigAccordionId(id = 3)
 	public int fishKey = Keyboard.KEY_END;
 
-	@Expose
-	@ConfigOption(
-		name = "Fishing Timer Alert",
-		desc = "Change the amount of time (seconds) until the timer dings"
-	)
-	@ConfigEditorSlider(
-		minValue = 0,
-		maxValue = 600,
-		minStep = 20
-	)
-	@ConfigAccordionId(id = 3)
-	public int customFishTimer = 300;
+
 
 	@ConfigOption(
 		name = "Combat",

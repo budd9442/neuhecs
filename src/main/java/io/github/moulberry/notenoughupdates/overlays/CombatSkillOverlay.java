@@ -245,7 +245,7 @@ public class CombatSkillOverlay
 				lineMap.put(0, EnumChatFormatting.AQUA + "Kills: " + EnumChatFormatting.YELLOW + format.format(counterInterp));
 			}
 
-			if (championTier <= 9 && championXp >= 0) {
+			if (championTier <= 9) {
 				int counterInterp = (int) interp(championXp, championXpLast);
 				lineMap.put(
 					6,
