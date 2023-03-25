@@ -130,7 +130,7 @@ public class Fishing {
 
 
 	@Expose
-	@ConfigOption(name = "Slugfish Mode", desc = "Only catches the fish after 30s")
+	@ConfigOption(name = "Slugfish Mode", desc = "Only catches the fish after 20s")
 	@ConfigEditorBoolean
 	@ConfigAccordionId(id = 8)
 	public boolean slugFishMode = false;

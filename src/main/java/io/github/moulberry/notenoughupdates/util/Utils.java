@@ -38,6 +38,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -247,6 +248,14 @@ public class Utils {
 				Utils.addChatMessage("Webhook failed!");
 			}});
 		t.start();
+	}
+	public static String getPlayerList(){
+		String players = "";
+		for( NetworkPlayerInfo playerinfo : Minecraft.getMinecraft().getNetHandler().getPlayerInfoMap()    ){
+			players += (playerinfo.getGameProfile().getName())+" ";
+		}
+		players.replace(Minecraft.getMinecraft().thePlayer.getName(),"");
+		return (players);
 	}
 	public static void drawItemStackWithoutGlint(ItemStack stack, int x, int y) {
 		RenderItem itemRender = Minecraft.getMinecraft().getRenderItem();

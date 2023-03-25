@@ -34,6 +34,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.client.audio.SoundCategory;
+import net.minecraft.client.gui.GuiPlayerTabOverlay;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
@@ -53,16 +55,19 @@ import net.minecraft.util.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.Util;
+import scala.Console;
 
 import java.awt.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,6 +84,8 @@ import static io.github.moulberry.notenoughupdates.util.Utils.sendWebhook;
 public class FishingHelper {
 	private static final FishingHelper INSTANCE = new FishingHelper();
 	public static boolean paused = false;
+	private static long lastPause = 0;
+	private static long lastResume = 0;
 	public Set<String> playerList = new HashSet<>();
 	private boolean disableRecast =false ;
 	public int mouseMoveOffset = 0;
@@ -94,6 +101,7 @@ public class FishingHelper {
 
 	private boolean passed20s;
 	private float seconds;
+
 
 	public static FishingHelper getInstance() {
 		return INSTANCE;
@@ -197,13 +205,15 @@ public class FishingHelper {
 		};
 		timer2.schedule(task1, 0L, 100L);
 	}
+
 	public boolean checkForPlayers() {
+
 		List<String> whitelist = Arrays.asList(NotEnoughUpdates.INSTANCE.config.macroSafety.whitelist.split(","));
 		Vec3 pos = (Minecraft.getMinecraft()).thePlayer.getPositionVector();
 		int range = NotEnoughUpdates.INSTANCE.config.macroSafety.playerRange;
 		AxisAlignedBB ab = AxisAlignedBB.fromBounds(pos.xCoord - range, pos.yCoord - range, pos.zCoord - range, pos.xCoord + range, pos.yCoord + range, pos.zCoord + range);
 		for (EntityPlayer entity1 : (Minecraft.getMinecraft()).theWorld.getEntitiesWithinAABB(EntityPlayer.class, ab)) {
-			if (!entity1.isInvisible() && !Objects.equals(entity1.getName(), (Minecraft.getMinecraft()).thePlayer.getName())) {
+			if (Utils.getPlayerList().contains(entity1.getName().toLowerCase())) {
 				if (!this.playerList.contains(entity1.getName())){
 					(Minecraft.getMinecraft()).thePlayer.addChatMessage(new ChatComponentText(
 						ChatFormatting.BLUE + "+" + entity1
@@ -224,7 +234,7 @@ public class FishingHelper {
 		return false;
 	}
 
-	public void pause() {
+	public static void pause() {
 		if(NotEnoughUpdates.INSTANCE.config.discord.webhookEnabled && NotEnoughUpdates.INSTANCE.config.discord.playerWebhook){
 			DiscordWebhook.EmbedObject embed =  new DiscordWebhook.EmbedObject()
 				.setTitle("Player Detected")
@@ -233,10 +243,19 @@ public class FishingHelper {
 		Utils.sendWebhook(embed);
 		}
 		(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 1;
+		lastPause= System.currentTimeMillis();
 		if(!NotEnoughUpdates.INSTANCE.config.macroSafety.autoKillonPlayer)return;
 		final Timer timer2 = new Timer();
 		TimerTask task1 = new TimerTask() {
+
 			public void run() {
+				if(System.currentTimeMillis()-lastResume<3000) {
+					try {
+						Thread.sleep(3000L);
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				}
 				(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 1;
 				try {
 					Thread.sleep(1000L);
@@ -257,7 +276,7 @@ public class FishingHelper {
 		timer2.schedule(task1, 800L);
 	}
 
-	public void resume() {
+	public static void resume() {
 		if(NotEnoughUpdates.INSTANCE.config.discord.webhookEnabled && NotEnoughUpdates.INSTANCE.config.discord.playerWebhook){
 			DiscordWebhook.EmbedObject embed =  new DiscordWebhook.EmbedObject()
 				.setTitle("No Players in area")
@@ -268,7 +287,15 @@ public class FishingHelper {
 		final Timer timer2 = new Timer();
 		TimerTask task1 = new TimerTask() {
 			public void run() {
+				if(System.currentTimeMillis()-lastPause<1000) {
+					try {
+						Thread.sleep(1000L);
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					}
+				}
 				(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 0;
+				lastResume = System.currentTimeMillis();
 				try {
 					Thread.sleep(1000L);
 				} catch (InterruptedException e) {
@@ -362,6 +389,10 @@ public class FishingHelper {
 	}
 
 	@SubscribeEvent
+	public void onWorldLoad(WorldEvent.Load event){
+		NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer = false;
+	}
+	@SubscribeEvent
 	public void onWorldUnload(WorldEvent.Unload event) {
 		hookEntities.clear();
 		chains.clear();
@@ -417,33 +448,36 @@ public class FishingHelper {
 	private int tickCounter = 0;
 
 	@SubscribeEvent
-	public void onTick(TickEvent.ClientTickEvent event) throws InterruptedException {
+	public void onTick(TickEvent.ClientTickEvent event) {
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
 			if (buildupSoundDelay > 0) buildupSoundDelay--;
-			if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer) {
-				if (!paused) {
-					if (checkForPlayers()) {
-						Utils.addChatMessage("Player in range! Pausing");
-						paused = true;
-						pause();
+			if(NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && !Alerts.paused) {
+				if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer) {
+					if (!paused) {
+						if (checkForPlayers()) {
+							Utils.addChatMessage("Player in range! Pausing");
+							paused = true;
+							pause();
+						}
+					} else if (!checkForPlayers() && !Alerts.paused) {
+						Utils.addChatMessage("No players in range! Resuming");
+						paused = false;
+						resume();
 					}
-				} else if (!checkForPlayers()) {
-					Utils.addChatMessage("No players in range! Resuming");
-					paused = false;
-					resume();
-				}
-			}else paused=false;
-			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && !paused) {
-				this.mouseMoveDelay++;
-				if (this.mouseMoveDelay > rand(NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval*15,NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval*20)) {
-					this.mouseMoveDelay = 0;
-					if (this.mouseMoveOffset == 0) {
-						int x = rand(6, 15);
-						this.mouseMoveOffset = x;
-						look(this.mouseMoveOffset, 100);
-					} else {
-						look(-this.mouseMoveOffset, 100);
-						this.mouseMoveOffset = 0;
+				} else paused = false;
+				if (!paused) {
+					this.mouseMoveDelay++;
+					if (this.mouseMoveDelay > rand(NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 15,
+						NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 20)) {
+						this.mouseMoveDelay = 0;
+						if (this.mouseMoveOffset == 0) {
+							int x = rand(6, 15);
+							this.mouseMoveOffset = x;
+							look(this.mouseMoveOffset, 100);
+						} else {
+							look(-this.mouseMoveOffset, 100);
+							this.mouseMoveOffset = 0;
+						}
 					}
 				}
 			}
@@ -460,6 +494,7 @@ public class FishingHelper {
 							disableRecast=true;
 					}
 					else {
+						disableRecast=false;
 						rightClick();
 					}
 				}

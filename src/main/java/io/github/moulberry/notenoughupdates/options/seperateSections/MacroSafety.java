@@ -23,11 +23,57 @@ import com.google.gson.annotations.Expose;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigAccordionId;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorAccordion;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorBoolean;
+import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorDropdown;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorSlider;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditorText;
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigOption;
 
 public class MacroSafety {
+	@ConfigOption(name = "Player Joins ", desc = "")
+	@ConfigEditorAccordion(id = 1)
+	public boolean playerJoins = true;
+
+	@Expose
+	@ConfigOption(
+		name = "Enabled",
+		desc = "Alerts you when a certain player joins the lobby"
+	)
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 1)
+	public boolean joinAlerts = false;
+
+	@Expose
+	@ConfigOption(
+		name = "Player List",
+		desc = "USe comma (,) to separate names",
+		searchTags = "list"
+	)
+	@ConfigEditorText
+	@ConfigAccordionId(id = 1)
+	public String alertlist = "";
+
+	@Expose
+	@ConfigOption(
+		name = "Action",
+		desc = "Action performed when player join alerts are triggered",
+		searchTags = "action"
+	)
+	@ConfigEditorDropdown(
+		values = {"Message Only","Pause Fishing", "Leave Lobby"}
+	)
+	@ConfigAccordionId(id = 1)
+	public int alertAction = 1;
+
+	@Expose
+	@ConfigOption(
+		name = "Discord Alert ",
+		desc = "Triggers a discord webhook"
+	)
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 1)
+	public boolean webhookAlerts = false;
+
+	// ---------------------------------------------- F I S H I N G -------------------------------------------------------------------
 	@ConfigOption(name = "Fishing ", desc = "")
 	@ConfigEditorAccordion(id = 8)
 	public boolean afkFishingRelated = true;
