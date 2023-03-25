@@ -79,11 +79,7 @@ public class Fishing {
 	@ConfigAccordionId(id = 10)
 	public int recastDelay = 20;
 
-	@Expose
-	@ConfigOption(name = "Auto wardrobe", desc = "open wardrobe when timer rings")
-	@ConfigEditorBoolean
-	@ConfigAccordionId(id = 8)
-	public boolean autoWardrobe = false;
+
 
 
 	@ConfigOption(name = "Worm Fishing", desc = "")
@@ -108,7 +104,11 @@ public class Fishing {
 	@ConfigAccordionId(id = 9)
 	public int customFishTimer = 300;
 
-
+	@Expose
+	@ConfigOption(name = "Auto wardrobe", desc = "open wardrobe when timer rings")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 8)
+	public boolean autoWardrobe = false;
 	@Expose
 	@ConfigOption(name = "Anti-AFK", desc = "Move mouse to bypass AFK tagging")
 	@ConfigEditorBoolean
@@ -127,7 +127,18 @@ public class Fishing {
 	@ConfigAccordionId(id = 8)
 	public int antiAFKinterval = 20;
 
-
+	@Expose
+	@ConfigOption(
+		name = "Catch timeout",
+		desc = "How long until recast if no fish can be caught ( in seconds )"
+	)
+	@ConfigEditorSlider(
+		minValue = 10,
+		maxValue = 60,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 8)
+	public int timeout = 20;
 
 	@Expose
 	@ConfigOption(name = "Slugfish Mode", desc = "Only catches the fish after 20s")
@@ -442,5 +453,6 @@ public class Fishing {
 	public boolean trophyRewardTooltips = true;
 
 	public boolean delayEditMode = false;
+
 
 }

@@ -61,20 +61,11 @@ import static io.github.moulberry.notenoughupdates.util.GuiTextures.YOUTUBE;
 
 public class NEUConfigEditor extends GuiElement {
 	private static final ResourceLocation[] socialsIco = new ResourceLocation[]{
-		DISCORD,
 		GITHUB,
-		TWITTER,
-		YOUTUBE,
-		PATREON,
-		TWITCH
+
 	};
 	private static final String[] socialsLink = new String[]{
-		"https://discord.gg/moulberry",
 		"https://github.com/Moulberry/NotEnoughUpdates",
-		"https://twitter.com/moulberry/",
-		"https://www.youtube.com/channel/UCPh-OKmRSS3IQi9p6YppLcw",
-		"https://patreon.com/moulberry",
-		"https://www.twitch.tv/moulberry2"
 	};
 	private static final ResourceLocation SEARCH_ICON = new ResourceLocation("notenoughupdates:core/search.png");
 	public static NEUConfigEditor editor = new NEUConfigEditor(NotEnoughUpdates.INSTANCE.config);
@@ -288,8 +279,8 @@ public class NEUConfigEditor extends GuiElement {
 
 		RenderUtils.drawFloatingRectDark(x + 5, y + 5, xSize - 10, 20, false);
 
-		TextRenderUtils.drawStringCenteredScaledMaxWidth(
-			"NotEnoughUpdates by " + EnumChatFormatting.DARK_PURPLE + "Moulberry",
+		TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.LIGHT_PURPLE + " JARVIS 1.00 "+ EnumChatFormatting.WHITE +"based on " +EnumChatFormatting.DARK_PURPLE+
+			"NotEnoughUpdates " + EnumChatFormatting.YELLOW + "Fishing is love. Fishing is life!",
 			x + xSize / 2, y + 15, false, 200, 0xa0a0a0
 		);
 

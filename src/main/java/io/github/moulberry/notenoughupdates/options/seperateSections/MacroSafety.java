@@ -29,9 +29,10 @@ import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigEditor
 import io.github.moulberry.notenoughupdates.core.config.annotations.ConfigOption;
 
 public class MacroSafety {
+
 	@ConfigOption(name = "Player Joins ", desc = "")
 	@ConfigEditorAccordion(id = 1)
-	public boolean playerJoins = true;
+	public boolean playerJoins = false;
 
 	@Expose
 	@ConfigOption(
@@ -73,6 +74,11 @@ public class MacroSafety {
 	@ConfigAccordionId(id = 1)
 	public boolean webhookAlerts = false;
 
+	@Expose
+	@ConfigOption(name = "Minimum Click delay ", desc = "")
+	@ConfigEditorSlider(minValue = 10, maxValue = 1000, minStep = 100)
+	public int minDelay = 250;
+
 	// ---------------------------------------------- F I S H I N G -------------------------------------------------------------------
 	@ConfigOption(name = "Fishing ", desc = "")
 	@ConfigEditorAccordion(id = 8)
@@ -87,7 +93,7 @@ public class MacroSafety {
 	@Expose
 	@ConfigOption(
 		name = "Whitelist",
-		desc = "USe comma(,) to separate names ",
+		desc = "USe comma (,) to separate names ",
 		searchTags = "whitelist"
 	)
 	@ConfigEditorText
@@ -96,14 +102,16 @@ public class MacroSafety {
 
 
 	@Expose
-	@ConfigOption(name = "Auto kill on Player detection", desc = "")
+	@ConfigOption(name = "kill on Player detection", desc = "only when worm fishing")
 	@ConfigEditorBoolean
 	@ConfigAccordionId(id = 8)
 	public boolean autoKillonPlayer=false;
 	@Expose
-	@ConfigOption(name = "Player Detection Range", desc = "")
+	@ConfigOption(name = "Player Detection Range", desc = "Scan Radius for players")
 	@ConfigEditorSlider(minValue = 0.0F, maxValue = 69.0F, minStep = 1.0F)
 	@ConfigAccordionId(id = 8)
 	public int playerRange = 10;
+
+
 
 }

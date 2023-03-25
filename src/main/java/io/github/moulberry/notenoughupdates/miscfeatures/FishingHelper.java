@@ -44,6 +44,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityFishHook;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
@@ -61,6 +62,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.Util;
 import scala.Console;
+import scala.util.Right;
 
 import java.awt.*;
 import java.io.IOException;
@@ -71,6 +73,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,6 +105,11 @@ public class FishingHelper {
 	private boolean passed20s;
 	private float seconds;
 	private int timeout;
+	static int clickQueue = 0;
+	private long lastClick = 0;
+	private static long lastCatch = 0;
+	private int fails = 0;
+	private boolean startedAutoFishing= false;
 
 	public static FishingHelper getInstance() {
 		return INSTANCE;
@@ -207,8 +215,9 @@ public class FishingHelper {
 	}
 
 	public boolean checkForPlayers() {
-
+		playerList.add(Minecraft.getMinecraft().thePlayer.getName());
 		List<String> whitelist = Arrays.asList(NotEnoughUpdates.INSTANCE.config.macroSafety.whitelist.split(","));
+
 		Vec3 pos = (Minecraft.getMinecraft()).thePlayer.getPositionVector();
 		int range = NotEnoughUpdates.INSTANCE.config.macroSafety.playerRange;
 		AxisAlignedBB ab = AxisAlignedBB.fromBounds(pos.xCoord - range, pos.yCoord - range, pos.zCoord - range, pos.xCoord + range, pos.yCoord + range, pos.zCoord + range);
@@ -231,6 +240,7 @@ public class FishingHelper {
 		for(String name : Arrays.asList(NotEnoughUpdates.INSTANCE.config.macroSafety.whitelist.split(","))) {
 			this.playerList.add(name);
 		}
+		playerList.add(Minecraft.getMinecraft().thePlayer.getName());
 		return false;
 	}
 
@@ -262,7 +272,7 @@ public class FishingHelper {
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-				FishingHelper.rightClick();
+				clickQueue++;
 				try {
 					Thread.sleep(200L);
 				} catch (InterruptedException e) {
@@ -301,7 +311,8 @@ public class FishingHelper {
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-				FishingHelper.rightClick();
+				clickQueue++;
+				lastCatch = System.currentTimeMillis();
 				try {
 					Thread.sleep(200L);
 				} catch (InterruptedException e) {
@@ -309,6 +320,7 @@ public class FishingHelper {
 				}
 				FishingSkillOverlay.timer = System.currentTimeMillis();
 				(Minecraft.getMinecraft()).thePlayer.addChatMessage(new ChatComponentText(ChatFormatting.AQUA + "Resumed Fishing!"));
+				lastCatch=System.currentTimeMillis();
 				timer2.cancel();
 			}
 		};
@@ -436,8 +448,12 @@ public class FishingHelper {
 
 			if (heldItem != null && heldItem.getItem() == Items.fishing_rod) {
 
+				if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) startedAutoFishing = true;
+
 				long currentTime = System.currentTimeMillis();
+				lastCast = currentTime;
 				lastCastRod = currentTime;
+				lastCatch  = currentTime;
 				if (currentTime - lastCastRodMillis > 500) {
 					lastCastRodMillis = currentTime;
 				}
@@ -449,9 +465,34 @@ public class FishingHelper {
 
 	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
+
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
-			timeout++;
+			fails = warningState == PlayerWarningState.NOTHING ? fails : 0;
+			if (Minecraft.getMinecraft().thePlayer.fishEntity != null && NotEnoughUpdates.INSTANCE.config.hidden.dev) {
+				if (warningState == PlayerWarningState.NOTHING) {
+					if (System.currentTimeMillis() - lastCast > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1000+(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000:0)) {
+						fails++;
+						Utils.addChatMessage("Detected not fishing. Recasting attempt " + fails);
+
+						clickQueue += 2;
+						lastCast = System.currentTimeMillis();
+					}
+				}
+				if (fails > 2) {
+					Utils.addChatMessage("Too many failed attempts! Disabling");
+					clickQueue = 0;
+					Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
+
+					fails = 0;
+				}
+			}
 			if (buildupSoundDelay > 0) buildupSoundDelay--;
+			if (clickQueue > 0 &&
+				System.currentTimeMillis() - lastClick > NotEnoughUpdates.INSTANCE.config.macroSafety.minDelay) {
+				rightClick();
+				clickQueue--;
+				lastClick = System.currentTimeMillis();
+			}
 
 			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) {
 				if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer) {
@@ -495,11 +536,13 @@ public class FishingHelper {
 						if (seconds > 20) {
 							disableRecast = false;
 							rightClick();
+							lastCatch = System.currentTimeMillis();
 						} else
 							disableRecast = true;
 					} else {
 						disableRecast = false;
 						rightClick();
+						lastCatch = System.currentTimeMillis();
 					}
 				} else if (fishDelay == 1) {
 					if (!this.disableRecast) {
@@ -507,61 +550,70 @@ public class FishingHelper {
 						lastCast = System.currentTimeMillis();
 					}
 				}
-			}
-			if (NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarning ||
-				NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarningR) {
-				if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
-					if (!pingDelayList.isEmpty()) {
-						while (pingDelayList.size() > 5) pingDelayList.remove(pingDelayList.size() - 1);
-
-						int totalMS = 0;
-						for (int delay : pingDelayList) {
-							totalMS += delay;
-						}
-
-						int averageMS = totalMS / pingDelayList.size();
-						pingDelayTicks = (int) Math.floor(averageMS / 50f);
+				if (startedAutoFishing && Minecraft.getMinecraft().thePlayer.inventory.currentItem==0) {
+					if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1500 +
+						(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
+						Utils.addChatMessage("Catch timeout! recasting");
+						lastCatch = System.currentTimeMillis();
+						clickQueue += (Minecraft.getMinecraft().thePlayer.fishEntity!=null ? 2 : 1);
 					}
 				}
 
-				if (hookedWarningStateTicks > 0) {
-					hookedWarningStateTicks--;
-					warningState = PlayerWarningState.FISH_HOOKED;
-				} else {
-					warningState = PlayerWarningState.NOTHING;
+				if (NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarning ||
+					NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarningR) {
 					if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
-						int fishEntityId = Minecraft.getMinecraft().thePlayer.fishEntity.getEntityId();
-						for (Map.Entry<WakeChain, List<Integer>> entry : chains.entrySet()) {
-							if (entry.getKey().particleNum >= 3 && entry.getValue().contains(fishEntityId)) {
-								warningState = PlayerWarningState.FISH_INCOMING;
-								break;
+						if (!pingDelayList.isEmpty()) {
+							while (pingDelayList.size() > 5) pingDelayList.remove(pingDelayList.size() - 1);
+
+							int totalMS = 0;
+							for (int delay : pingDelayList) {
+								totalMS += delay;
+							}
+
+							int averageMS = totalMS / pingDelayList.size();
+							pingDelayTicks = (int) Math.floor(averageMS / 50f);
+						}
+					}
+
+					if (hookedWarningStateTicks > 0) {
+						hookedWarningStateTicks--;
+						warningState = PlayerWarningState.FISH_HOOKED;
+					} else {
+						warningState = PlayerWarningState.NOTHING;
+						if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
+							int fishEntityId = Minecraft.getMinecraft().thePlayer.fishEntity.getEntityId();
+							for (Map.Entry<WakeChain, List<Integer>> entry : chains.entrySet()) {
+								if (entry.getKey().particleNum >= 3 && entry.getValue().contains(fishEntityId)) {
+									warningState = PlayerWarningState.FISH_INCOMING;
+									break;
+								}
 							}
 						}
 					}
 				}
-			}
 
-			if (tickCounter++ >= 20) {
-				long currentTime = System.currentTimeMillis();
-				tickCounter = 0;
+				if (tickCounter++ >= 20) {
+					long currentTime = System.currentTimeMillis();
+					tickCounter = 0;
 
-				Set<Integer> toRemoveEnt = new HashSet<>();
-				for (Map.Entry<Integer, EntityFishHook> entry : hookEntities.entrySet()) {
-					if (entry.getValue().isDead) {
-						toRemoveEnt.add(entry.getKey());
+					Set<Integer> toRemoveEnt = new HashSet<>();
+					for (Map.Entry<Integer, EntityFishHook> entry : hookEntities.entrySet()) {
+						if (entry.getValue().isDead) {
+							toRemoveEnt.add(entry.getKey());
+						}
 					}
-				}
-				hookEntities.keySet().removeAll(toRemoveEnt);
+					hookEntities.keySet().removeAll(toRemoveEnt);
 
-				Set<WakeChain> toRemoveChain = new HashSet<>();
-				for (Map.Entry<WakeChain, List<Integer>> entry : chains.entrySet()) {
-					if (currentTime - entry.getKey().lastUpdate > 200 ||
-						entry.getValue().isEmpty() ||
-						Collections.disjoint(entry.getValue(), hookEntities.keySet())) {
-						toRemoveChain.add(entry.getKey());
+					Set<WakeChain> toRemoveChain = new HashSet<>();
+					for (Map.Entry<WakeChain, List<Integer>> entry : chains.entrySet()) {
+						if (currentTime - entry.getKey().lastUpdate > 200 ||
+							entry.getValue().isEmpty() ||
+							Collections.disjoint(entry.getValue(), hookEntities.keySet())) {
+							toRemoveChain.add(entry.getKey());
+						}
 					}
+					chains.keySet().removeAll(toRemoveChain);
 				}
-				chains.keySet().removeAll(toRemoveChain);
 			}
 		}
 	}
