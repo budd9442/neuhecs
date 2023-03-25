@@ -101,7 +101,7 @@ public class FishingHelper {
 
 	private boolean passed20s;
 	private float seconds;
-
+	private int timeout;
 
 	public static FishingHelper getInstance() {
 		return INSTANCE;
@@ -213,7 +213,7 @@ public class FishingHelper {
 		int range = NotEnoughUpdates.INSTANCE.config.macroSafety.playerRange;
 		AxisAlignedBB ab = AxisAlignedBB.fromBounds(pos.xCoord - range, pos.yCoord - range, pos.zCoord - range, pos.xCoord + range, pos.yCoord + range, pos.zCoord + range);
 		for (EntityPlayer entity1 : (Minecraft.getMinecraft()).theWorld.getEntitiesWithinAABB(EntityPlayer.class, ab)) {
-			if (Utils.getPlayerList().contains(entity1.getName().toLowerCase())) {
+			if (Utils.getPlayerList().contains(entity1.getName())) {
 				if (!this.playerList.contains(entity1.getName())){
 					(Minecraft.getMinecraft()).thePlayer.addChatMessage(new ChatComponentText(
 						ChatFormatting.BLUE + "+" + entity1
@@ -450,8 +450,10 @@ public class FishingHelper {
 	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
+			timeout++;
 			if (buildupSoundDelay > 0) buildupSoundDelay--;
-			if(NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && !Alerts.paused) {
+
+			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) {
 				if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer) {
 					if (!paused) {
 						if (checkForPlayers()) {
@@ -459,46 +461,47 @@ public class FishingHelper {
 							paused = true;
 							pause();
 						}
-					} else if (!checkForPlayers() && !Alerts.paused) {
+					} else if (!checkForPlayers()) {
 						Utils.addChatMessage("No players in range! Resuming");
 						paused = false;
 						resume();
 					}
 				} else paused = false;
-				if (!paused) {
-					this.mouseMoveDelay++;
-					if (this.mouseMoveDelay > rand(NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 15,
-						NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 20)) {
-						this.mouseMoveDelay = 0;
-						if (this.mouseMoveOffset == 0) {
-							int x = rand(6, 15);
-							this.mouseMoveOffset = x;
-							look(this.mouseMoveOffset, 100);
-						} else {
-							look(-this.mouseMoveOffset, 100);
-							this.mouseMoveOffset = 0;
-						}
+			}
+			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && !paused) {
+				this.mouseMoveDelay++;
+				if (this.mouseMoveDelay > rand(
+					NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 15,
+					NotEnoughUpdates.INSTANCE.config.fishing.antiAFKinterval * 20
+				)) {
+					this.mouseMoveDelay = 0;
+					if (this.mouseMoveOffset == 0) {
+						int x = rand(6, 15);
+						this.mouseMoveOffset = x;
+						look(this.mouseMoveOffset, 100);
+					} else {
+						look(-this.mouseMoveOffset, 100);
+						this.mouseMoveOffset = 0;
 					}
 				}
 			}
+
 			if (this.fishDelay > 0) {
 				this.fishDelay--;
 			}
 			if (NotEnoughUpdates.INSTANCE.config.fishing.autoFishing && !paused) {
 				if (fishDelay == NotEnoughUpdates.INSTANCE.config.fishing.recastDelay) {
 					if (NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode) {
-						if(seconds>20) {
-							disableRecast=false;
+						if (seconds > 20) {
+							disableRecast = false;
 							rightClick();
-						}else
-							disableRecast=true;
-					}
-					else {
-						disableRecast=false;
+						} else
+							disableRecast = true;
+					} else {
+						disableRecast = false;
 						rightClick();
 					}
-				}
-				else if (fishDelay == 1) {
+				} else if (fishDelay == 1) {
 					if (!this.disableRecast) {
 						rightClick();
 						lastCast = System.currentTimeMillis();
@@ -562,6 +565,7 @@ public class FishingHelper {
 			}
 		}
 	}
+
 
 	private double calculateAngleFromOffsets(double xOffset, double zOffset) {
 		double angleX = Math.toDegrees(Math.acos(xOffset / 0.04f));

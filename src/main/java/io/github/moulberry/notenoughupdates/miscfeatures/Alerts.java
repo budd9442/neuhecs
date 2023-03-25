@@ -54,7 +54,7 @@ public class Alerts {
 
 
 					}
-				} else if (checkForPlayers()==null && !FishingHelper.paused) {
+				} else if (checkForPlayers()==null ) {
 					Utils.addChatMessage("Resuming!");
 					paused = false;
 					FishingHelper.resume();
