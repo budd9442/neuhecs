@@ -198,6 +198,12 @@ public class NEUConfig extends Config {
 
 	@Expose
 	@Category(
+		name = "Discord",
+		desc = "Discord alerts & webhook settings"
+	)
+	public Discord discord = new Discord();
+	@Expose
+	@Category(
 		name = "Skill Overlays",
 		desc = "Skill Overlays"
 	)
@@ -317,11 +323,7 @@ public class NEUConfig extends Config {
 		desc = "Garden"
 	)
 	public Garden garden = new Garden();
-	@Category(
-		name = "Discord",
-		desc = "Discord"
-	)
-	public Discord discord = new Discord();
+
 	@Expose
 	@Category(
 		name = "NEU Auction House",

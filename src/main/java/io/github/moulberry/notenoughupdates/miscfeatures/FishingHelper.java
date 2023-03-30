@@ -457,7 +457,8 @@ public class FishingHelper {
 				if (currentTime - lastCastRodMillis > 500) {
 					lastCastRodMillis = currentTime;
 				}
-			}
+			}else
+				startedAutoFishing = false;
 		}
 	}
 
@@ -468,8 +469,8 @@ public class FishingHelper {
 
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
 			fails = warningState == PlayerWarningState.NOTHING ? fails : 0;
-			if (Minecraft.getMinecraft().thePlayer.fishEntity != null && NotEnoughUpdates.INSTANCE.config.hidden.dev) {
-				if (warningState == PlayerWarningState.NOTHING) {
+			if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
+				if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0) {
 					if (System.currentTimeMillis() - lastCast > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1000+(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000:0)) {
 						fails++;
 						Utils.addChatMessage("Detected not fishing. Recasting attempt " + fails);
@@ -478,7 +479,7 @@ public class FishingHelper {
 						lastCast = System.currentTimeMillis();
 					}
 				}
-				if (fails > 2) {
+				if (fails > 4) {
 					Utils.addChatMessage("Too many failed attempts! Disabling");
 					clickQueue = 0;
 					Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
@@ -550,12 +551,12 @@ public class FishingHelper {
 						lastCast = System.currentTimeMillis();
 					}
 				}
-				if (startedAutoFishing && Minecraft.getMinecraft().thePlayer.inventory.currentItem==0) {
+				if (startedAutoFishing && Minecraft.getMinecraft().thePlayer.inventory.currentItem==0 && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0) {
 					if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1500 +
 						(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
 						Utils.addChatMessage("Catch timeout! recasting");
 						lastCatch = System.currentTimeMillis();
-						clickQueue += (Minecraft.getMinecraft().thePlayer.fishEntity!=null ? 2 : 1);
+						clickQueue += (Minecraft.getMinecraft().thePlayer.fishEntity==null ? 1 : 2);
 					}
 				}
 

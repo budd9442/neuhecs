@@ -33,18 +33,20 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public class Alerts {
 	public static Boolean paused = false;
 	public Boolean found = false;
+	public String lastPlayer;
 	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
-		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END &&
-			NotEnoughUpdates.INSTANCE.config.hidden.dev) {
+		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END ) {
 			if (NotEnoughUpdates.INSTANCE.config.macroSafety.joinAlerts) {
 				if (!paused) {
 					String player = checkForPlayers();
 					if (player!=null) {
-						paused = true;
+
 						Utils.addChatMessage(ChatFormatting.RED+"[ALERT] "+ChatFormatting.WHITE+player+ChatFormatting.RED+" joined the lobby!");
+						lastPlayer= player;
 						switch (NotEnoughUpdates.INSTANCE.config.macroSafety.alertAction){
 							case 1:
+								paused = true;
 								FishingHelper.pause();
 								break;
 							case 2:
@@ -55,9 +57,11 @@ public class Alerts {
 
 					}
 				} else if (checkForPlayers()==null ) {
-					Utils.addChatMessage("Resuming!");
-					paused = false;
-					FishingHelper.resume();
+					Utils.addChatMessage(lastPlayer+" left!");
+					if(paused) {
+						paused = false;
+						FishingHelper.resume();
+					}
 				}
 			} else paused = false;
 		}

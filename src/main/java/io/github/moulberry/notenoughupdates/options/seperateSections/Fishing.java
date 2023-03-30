@@ -130,7 +130,7 @@ public class Fishing {
 	@Expose
 	@ConfigOption(
 		name = "Catch timeout",
-		desc = "How long until recast if no fish can be caught ( in seconds )"
+		desc = "How long until recast if no fish can be caught ( in seconds ) 0 = disabled"
 	)
 	@ConfigEditorSlider(
 		minValue = 10,
@@ -138,7 +138,7 @@ public class Fishing {
 		minStep = 1
 	)
 	@ConfigAccordionId(id = 8)
-	public int timeout = 20;
+	public int timeout = 0;
 
 	@Expose
 	@ConfigOption(name = "Slugfish Mode", desc = "Only catches the fish after 20s")
