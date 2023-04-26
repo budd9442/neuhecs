@@ -129,6 +129,18 @@ public class Fishing {
 
 	@Expose
 	@ConfigOption(
+		name = "Max Yaw Change",
+		desc = "Maximum mouse displacement allowed for anti afk"
+	)
+	@ConfigEditorSlider(
+		minValue = 1,
+		maxValue = 13,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 8)
+	public int yawChange = 6;
+	@Expose
+	@ConfigOption(
 		name = "Catch timeout",
 		desc = "How long until recast if no fish can be caught ( in seconds ) 0 = disabled"
 	)

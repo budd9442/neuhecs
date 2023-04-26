@@ -202,13 +202,20 @@ public class FishingHelper {
 
 	public static void look(final float offset, int n) {
 		final Timer timer2 = new Timer();
-		final int[] count = { 0 };
+		final float[] total = {0};
+		Utils.addChatMessage("looking " + offset);
 		TimerTask task1 = new TimerTask() {
 			public void run() {
-				(Minecraft.getMinecraft()).thePlayer.rotationYaw += offset / 100.0F;
-				count[0] = count[0] + 1;
-				if (count[0] > 100)
-					timer2.cancel();
+				float k = offset / rand(50,100);
+				(Minecraft.getMinecraft()).thePlayer.rotationYaw += k;
+				total[0] += k;
+				if(offset>0) {
+					if (total[0] >= offset)
+						timer2.cancel();
+				}else{
+					if (total[0] <= offset)
+						timer2.cancel();
+				}
 			}
 		};
 		timer2.schedule(task1, 0L, 100L);
@@ -217,7 +224,6 @@ public class FishingHelper {
 	public boolean checkForPlayers() {
 		playerList.add(Minecraft.getMinecraft().thePlayer.getName());
 		List<String> whitelist = Arrays.asList(NotEnoughUpdates.INSTANCE.config.macroSafety.whitelist.split(","));
-
 		Vec3 pos = (Minecraft.getMinecraft()).thePlayer.getPositionVector();
 		int range = NotEnoughUpdates.INSTANCE.config.macroSafety.playerRange;
 		AxisAlignedBB ab = AxisAlignedBB.fromBounds(pos.xCoord - range, pos.yCoord - range, pos.zCoord - range, pos.xCoord + range, pos.yCoord + range, pos.zCoord + range);
@@ -470,7 +476,7 @@ public class FishingHelper {
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
 			fails = warningState == PlayerWarningState.NOTHING ? fails : 0;
 			if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
-				if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0) {
+				if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0 && NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) {
 					if (System.currentTimeMillis() - lastCast > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1000+(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000:0)) {
 						fails++;
 						Utils.addChatMessage("Detected not fishing. Recasting attempt " + fails);
@@ -518,7 +524,7 @@ public class FishingHelper {
 				)) {
 					this.mouseMoveDelay = 0;
 					if (this.mouseMoveOffset == 0) {
-						int x = rand(6, 15);
+						int x = rand(2, NotEnoughUpdates.INSTANCE.config.fishing.yawChange);
 						this.mouseMoveOffset = x;
 						look(this.mouseMoveOffset, 100);
 					} else {
@@ -552,7 +558,7 @@ public class FishingHelper {
 					}
 				}
 				if (startedAutoFishing && Minecraft.getMinecraft().thePlayer.inventory.currentItem==0 && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0) {
-					if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1500 +
+					if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1100 +
 						(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
 						Utils.addChatMessage("Catch timeout! recasting");
 						lastCatch = System.currentTimeMillis();

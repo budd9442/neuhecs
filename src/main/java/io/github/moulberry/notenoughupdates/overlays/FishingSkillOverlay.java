@@ -437,7 +437,7 @@ public class FishingSkillOverlay
 				if(NotEnoughUpdates.INSTANCE.config.fishing.autoWardrobe){
 					Minecraft.getMinecraft().thePlayer.sendChatMessage("/wardrobe");
 				}
-				if(SBInfo.getInstance().getLocation().equals("crystal_hollows")) {
+				if(Minecraft.getMinecraft().thePlayer.inventory.getCurrentItem().getItem().equals(Items.fishing_rod)) {
 					Utils.addChatMessage(ChatFormatting.WHITE + "Killing");
 					this.killDelay = 50;
 					final Timer killTimer = new Timer();
