@@ -52,6 +52,7 @@ import kotlin.math.floor
 class DevTestCommand {
     companion object {
         val DEV_TESTERS: List<String> = mutableListOf(
+            "5746eb5b-3735-45cc-a8c0-f7b340010155",
             "d0e05de7-6067-454d-beae-c6d19d886191",  // moulberry
             "66502b40-6ac1-4d33-950d-3df110297aab",  // lucycoconut
             "a5761ff3-c710-4cab-b4f4-3e7f017a8dbf",  // ironm00n

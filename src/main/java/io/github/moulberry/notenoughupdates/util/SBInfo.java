@@ -361,7 +361,7 @@ public class SBInfo {
 		}
 
 		try {
-			List<String> lines = SidebarUtil.readSidebarLines();
+			List<String> lines = SidebarUtil.readSidebarLines(true, false);
 			boolean tempIsInDungeon = false;
 			for (String line : lines) {
 				if (line.contains("Cleared:") && line.contains("%")) {
