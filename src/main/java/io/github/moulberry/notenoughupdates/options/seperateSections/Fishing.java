@@ -92,6 +92,11 @@ public class Fishing {
 	@ConfigAccordionId(id = 9)
 	public boolean autoKilling = false;
 	@Expose
+	@ConfigOption(name = "Auto renew", desc = "Renews the Crystal Hollows pass automatically")
+	@ConfigEditorBoolean
+	@ConfigAccordionId(id = 9)
+	public boolean autoRenew = true;
+	@Expose
 	@ConfigOption(
 		name = "Auto kill delay",
 		desc = "Change the amount of time ( in seconds ) until auto kill"
@@ -133,21 +138,33 @@ public class Fishing {
 		desc = "Maximum mouse displacement allowed for anti afk"
 	)
 	@ConfigEditorSlider(
-		minValue = 1,
+		minValue = 5,
 		maxValue = 13,
 		minStep = 1
 	)
 	@ConfigAccordionId(id = 8)
-	public int yawChange = 6;
+	public int maxYawChange = 6;
+	@Expose
+	@ConfigOption(
+		name = "Min Yaw Change",
+		desc = "Minimum mouse displacement allowed for anti afk"
+	)
+	@ConfigEditorSlider(
+		minValue = 2,
+		maxValue = 13,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 8)
+	public int minyawChange = 3;
 	@Expose
 	@ConfigOption(
 		name = "Catch timeout",
-		desc = "How long until recast if no fish can be caught ( in seconds ) 0 = disabled"
+		desc = "How long until recast if no fish is caught ( in ms ) 0 = disabled"
 	)
 	@ConfigEditorSlider(
-		minValue = 10,
-		maxValue = 60,
-		minStep = 1
+		minValue = 0,
+		maxValue = 10000,
+		minStep = 10
 	)
 	@ConfigAccordionId(id = 8)
 	public int timeout = 0;
@@ -159,46 +176,7 @@ public class Fishing {
 	public boolean slugFishMode = false;
 
 
-	@ConfigOption(name = "Lava fishing", desc = "")
-	@ConfigEditorAccordion(id = 18)
-	public boolean lavaEsp = false;
 
-	@Expose
-	@ConfigOption(name = "Lava ESP", desc = "Warning! unstable asf. use with crashpatch ( unless u wanna crash )")
-	@ConfigEditorBoolean
-	@ConfigAccordionId(id = 18)
-	public boolean lavaESP = false;
-
-	@Expose
-	@ConfigOption(name = "Lava ESP scan radius", desc = "Warning! higher values will case lag")
-	@ConfigEditorSlider(minValue = 1, maxValue = 150, minStep = 1)
-	@ConfigAccordionId(id = 18)
-	public double lavaScanRadius = 50;
-
-	@Expose
-	@ConfigOption(name = "Lava ESP scan interval ( in Ticks )", desc = "Warning! lower intervals will cause lag")
-	@ConfigEditorSlider(minValue = 10, maxValue = 100, minStep = 1)
-	@ConfigAccordionId(id = 18)
-	public int lavaScanInterval = 20;
-	@Expose
-	@ConfigOption(name = "Lava render limit", desc = "")
-	@ConfigEditorSlider(minValue = 100, maxValue = 3000, minStep = 10)
-	@ConfigAccordionId(id = 18)
-	public int lavaLimit = 500;
-	@Expose
-	@ConfigOption(name = "Hide near blocks", desc = "")
-	@ConfigEditorSlider(minValue = 5, maxValue = 100, minStep = 1)
-	@ConfigAccordionId(id = 18)
-	public int nearLimit = 15;
-	@Expose
-	@ConfigOption(
-		name = "Lava ESP Color",
-		desc = "",
-		searchTags = "color"
-	)
-	@ConfigEditorColour
-	@ConfigAccordionId(id = 18)
-	public String lavaColor = "0:255:0:255:0";
 
 	@ConfigOption(name = "Incoming Fish Warning", desc = "")
 	@ConfigEditorAccordion(id = 3)

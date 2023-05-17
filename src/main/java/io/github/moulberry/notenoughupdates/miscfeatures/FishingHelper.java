@@ -26,6 +26,7 @@ import io.github.moulberry.notenoughupdates.autosubscribe.NEUAutoSubscribe;
 import io.github.moulberry.notenoughupdates.core.ChromaColour;
 import io.github.moulberry.notenoughupdates.events.SpawnParticleEvent;
 import io.github.moulberry.notenoughupdates.overlays.FishingSkillOverlay;
+import io.github.moulberry.notenoughupdates.util.NpcUtils;
 import io.github.moulberry.notenoughupdates.util.SBInfo;
 import io.github.moulberry.notenoughupdates.util.SpecialColour;
 import io.github.moulberry.notenoughupdates.util.Utils;
@@ -53,6 +54,7 @@ import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -89,6 +91,9 @@ public class FishingHelper {
 	public static boolean paused = false;
 	private static long lastPause = 0;
 	private static long lastResume = 0;
+	private static boolean pausing =false;
+	private static boolean resuming =false;
+	private static int scannerTicks = 0;
 	public Set<String> playerList = new HashSet<>();
 	private boolean disableRecast =false ;
 	public int mouseMoveOffset = 0;
@@ -110,6 +115,7 @@ public class FishingHelper {
 	private static long lastCatch = 0;
 	private int fails = 0;
 	private boolean startedAutoFishing= false;
+	private int notFishingCount;
 
 	public static FishingHelper getInstance() {
 		return INSTANCE;
@@ -203,7 +209,6 @@ public class FishingHelper {
 	public static void look(final float offset, int n) {
 		final Timer timer2 = new Timer();
 		final float[] total = {0};
-		Utils.addChatMessage("looking " + offset);
 		TimerTask task1 = new TimerTask() {
 			public void run() {
 				float k = offset / rand(50,100);
@@ -228,7 +233,7 @@ public class FishingHelper {
 		int range = NotEnoughUpdates.INSTANCE.config.macroSafety.playerRange;
 		AxisAlignedBB ab = AxisAlignedBB.fromBounds(pos.xCoord - range, pos.yCoord - range, pos.zCoord - range, pos.xCoord + range, pos.yCoord + range, pos.zCoord + range);
 		for (EntityPlayer entity1 : (Minecraft.getMinecraft()).theWorld.getEntitiesWithinAABB(EntityPlayer.class, ab)) {
-			if (Utils.getPlayerList().contains(entity1.getName())) {
+			if (!NpcUtils.isNpc(entity1) && entity1.getName()!=Minecraft.getMinecraft().thePlayer.getName()) {
 				if (!this.playerList.contains(entity1.getName())){
 					(Minecraft.getMinecraft()).thePlayer.addChatMessage(new ChatComponentText(
 						ChatFormatting.BLUE + "+" + entity1
@@ -251,6 +256,7 @@ public class FishingHelper {
 	}
 
 	public static void pause() {
+		pausing =true;
 		if(NotEnoughUpdates.INSTANCE.config.discord.webhookEnabled && NotEnoughUpdates.INSTANCE.config.discord.playerWebhook){
 			DiscordWebhook.EmbedObject embed =  new DiscordWebhook.EmbedObject()
 				.setTitle("Player Detected")
@@ -265,20 +271,13 @@ public class FishingHelper {
 		TimerTask task1 = new TimerTask() {
 
 			public void run() {
-				if(System.currentTimeMillis()-lastResume<3000) {
-					try {
-						Thread.sleep(3000L);
-					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					}
-				}
 				(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 1;
 				try {
-					Thread.sleep(1000L);
+					Thread.sleep(500L);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-				clickQueue++;
+				if(NotEnoughUpdates.INSTANCE.config.macroSafety.autoKillonPlayer) {rightClick();}
 				try {
 					Thread.sleep(200L);
 				} catch (InterruptedException e) {
@@ -289,7 +288,7 @@ public class FishingHelper {
 				timer2.cancel();
 			}
 		};
-		timer2.schedule(task1, 800L);
+		timer2.schedule(task1, 200L);
 	}
 
 	public static void resume() {
@@ -303,34 +302,22 @@ public class FishingHelper {
 		final Timer timer2 = new Timer();
 		TimerTask task1 = new TimerTask() {
 			public void run() {
-				if(System.currentTimeMillis()-lastPause<1000) {
-					try {
-						Thread.sleep(1000L);
-					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					}
-				}
 				(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 0;
 				lastResume = System.currentTimeMillis();
 				try {
-					Thread.sleep(1000L);
+					Thread.sleep(500L);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-				clickQueue++;
+				rightClick();
 				lastCatch = System.currentTimeMillis();
-				try {
-					Thread.sleep(200L);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
 				FishingSkillOverlay.timer = System.currentTimeMillis();
 				(Minecraft.getMinecraft()).thePlayer.addChatMessage(new ChatComponentText(ChatFormatting.AQUA + "Resumed Fishing!"));
 				lastCatch=System.currentTimeMillis();
 				timer2.cancel();
 			}
 		};
-		timer2.schedule(task1, 800L);
+		timer2.schedule(task1, 200L);
 	}
 
 	public void onRenderBobber(EntityFishHook hook) {
@@ -471,28 +458,70 @@ public class FishingHelper {
 	private int tickCounter = 0;
 
 	@SubscribeEvent
+	public void onMessageReceived(ClientChatReceivedEvent event) {
+		String message = ChatFormatting.stripFormatting(event.message.getUnformattedText());
+		if (!NotEnoughUpdates.INSTANCE.config.fishing.autoRenew || Minecraft.getMinecraft().thePlayer == null ||
+			Minecraft.getMinecraft().theWorld == null) return;
+
+		if (message.contains("Your pass to the Crystal Hollows will expire in 1 minute")) {
+
+			final Timer renewTimer = new Timer();
+			final float[] total = {0};
+			TimerTask task1 = new TimerTask() {
+				public void run() {
+					Utils.addChatMessage("Auto renewing Crystal Hollows pass");
+					Minecraft.getMinecraft().thePlayer.sendChatMessage("/purchasecrystallhollowspass");
+				}
+			};
+			renewTimer.schedule(task1,1000);
+		}
+	}
+	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
 
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
+			scannerTicks++;
 			fails = warningState == PlayerWarningState.NOTHING ? fails : 0;
-			if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
-				if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0 && NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) {
-					if (System.currentTimeMillis() - lastCast > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1000+(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000:0)) {
-						fails++;
-						Utils.addChatMessage("Detected not fishing. Recasting attempt " + fails);
+			ItemStack helditem = Minecraft.getMinecraft().thePlayer.getHeldItem();
+			if(NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && helditem!=null) {
+				if (Minecraft.getMinecraft().thePlayer.fishEntity != null && helditem.getItem()==Items.fishing_rod) {
+					notFishingCount=0;
+					if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout > 0) {
+						if (System.currentTimeMillis() - lastCast > NotEnoughUpdates.INSTANCE.config.fishing.timeout +
+							(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
+							fails++;
+							Utils.addChatMessage("Detected not fishing. Recasting attempt " + fails);
+							Thread t = new Thread(() -> {
+								try {
+									rightClick();
+									Thread.sleep(NotEnoughUpdates.INSTANCE.config.fishing.recastDelay*40);
+									rightClick();
+									lastCast = System.currentTimeMillis();
+									Thread.sleep(100);
+								} catch (Exception e) {
+									Utils.addChatMessage(e.getMessage());
+								}
+							});
+							t.start();
 
-						clickQueue += 2;
-						lastCast = System.currentTimeMillis();
+						}
 					}
-				}
-				if (fails > 4) {
-					Utils.addChatMessage("Too many failed attempts! Disabling");
-					clickQueue = 0;
-					Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
+					if (fails > 4) {
+						Utils.addChatMessage("Too many failed attempts! Disabling");
+						clickQueue = 0;
+						Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
 
-					fails = 0;
+						fails = 0;
+					}
+				}else {
+					notFishingCount++;
+				}
+				if(notFishingCount>20){
+					notFishingCount=0;
+					rightClick();
 				}
 			}
+
 			if (buildupSoundDelay > 0) buildupSoundDelay--;
 			if (clickQueue > 0 &&
 				System.currentTimeMillis() - lastClick > NotEnoughUpdates.INSTANCE.config.macroSafety.minDelay) {
@@ -502,7 +531,22 @@ public class FishingHelper {
 			}
 
 			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK) {
-				if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer) {
+//				if(warningState==PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout > 0) {
+//					if ( Minecraft.getMinecraft().thePlayer.getHeldItem().getItem()==Items.fishing_rod) {
+//						if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout +
+//							(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
+//							Utils.addChatMessage("Catch timeout! recasting");
+//							lastCatch = System.currentTimeMillis();
+//							if(NotEnoughUpdates.INSTANCE.config.hidden.dev){
+//							 Utils.addChatMessage(Minecraft.getMinecraft().thePlayer.fishEntity == null ? String.valueOf(Minecraft.getMinecraft().thePlayer.fishEntity)
+//								 : "no fish entity");
+//							}
+//							clickQueue += (Minecraft.getMinecraft().thePlayer.fishEntity == null ? 1 : 2);
+//						}
+//					}
+//				}
+				if (NotEnoughUpdates.INSTANCE.config.macroSafety.pauseOnPlayer && scannerTicks>=20) {
+					scannerTicks=0;
 					if (!paused) {
 						if (checkForPlayers()) {
 							Utils.addChatMessage("Player in range! Pausing");
@@ -514,8 +558,8 @@ public class FishingHelper {
 						paused = false;
 						resume();
 					}
-				} else paused = false;
-			}
+				}
+			}else paused = false;
 			if (NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && !paused) {
 				this.mouseMoveDelay++;
 				if (this.mouseMoveDelay > rand(
@@ -524,7 +568,7 @@ public class FishingHelper {
 				)) {
 					this.mouseMoveDelay = 0;
 					if (this.mouseMoveOffset == 0) {
-						int x = rand(2, NotEnoughUpdates.INSTANCE.config.fishing.yawChange);
+						int x = rand(NotEnoughUpdates.INSTANCE.config.fishing.minyawChange, NotEnoughUpdates.INSTANCE.config.fishing.maxYawChange);
 						this.mouseMoveOffset = x;
 						look(this.mouseMoveOffset, 100);
 					} else {
@@ -557,15 +601,6 @@ public class FishingHelper {
 						lastCast = System.currentTimeMillis();
 					}
 				}
-				if (startedAutoFishing && Minecraft.getMinecraft().thePlayer.inventory.currentItem==0 && NotEnoughUpdates.INSTANCE.config.fishing.timeout>0) {
-					if (System.currentTimeMillis() - lastCatch > NotEnoughUpdates.INSTANCE.config.fishing.timeout*1100 +
-						(NotEnoughUpdates.INSTANCE.config.fishing.slugFishMode ? 20000 : 0)) {
-						Utils.addChatMessage("Catch timeout! recasting");
-						lastCatch = System.currentTimeMillis();
-						clickQueue += (Minecraft.getMinecraft().thePlayer.fishEntity==null ? 1 : 2);
-					}
-				}
-
 				if (NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarning ||
 					NotEnoughUpdates.INSTANCE.config.fishing.incomingFishWarningR) {
 					if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {

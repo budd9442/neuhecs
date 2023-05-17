@@ -307,6 +307,7 @@ public class NotEnoughUpdates {
 				tmp.delete();
 			}
 		}));
+		NotEnoughUpdates.INSTANCE.config.fishing.antiAFK=false;
 	}
 
 	public void saveConfig() {

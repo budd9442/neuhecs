@@ -54,62 +54,56 @@ public class LavaFishingESP {
 	private final Set<BlockPos> highlightBlockList = new HashSet<>();
 	private final Set<BlockPos> highlightBlockListCopy = new HashSet<>();
 	protected int getColor() {
-		return SpecialColour.specialToChromaRGB(NotEnoughUpdates.INSTANCE.config.fishing.lavaColor);
+		return SpecialColour.specialToChromaRGB(NotEnoughUpdates.INSTANCE.config.esp.lavaColor);
 	}
 	protected boolean isEnabled() {
-		return (NotEnoughUpdates.INSTANCE.config.fishing.lavaESP ) && !disabledInSession;
+		return (NotEnoughUpdates.INSTANCE.config.esp.lavaESP ) && !disabledInSession;
 	}
 	protected  boolean inPrecursor(){
 		return (SBInfo.getInstance().getLocation() != null && SBInfo.getInstance().getLocation().equals("crystal_hollows") &&
 			SBInfo.getInstance().location.equals("Precursor Remnants"));
 	}
 	@SubscribeEvent
-	public void onChatMessage(ClientChatReceivedEvent event) {
-		if (event.message.getUnformattedText().equals("A flaming worm surfaces from the depths!")) {
-			disabledInSession = true;
-			Utils.addChatMessage("Lava ESP disabled");
-		}
-	}
-
-	@SubscribeEvent
-	public void onWorldChange(WorldEvent.Unload event) {
-			disabledInSession = false;
-	}
-	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
-		if (isEnabled() && tick % NotEnoughUpdates.INSTANCE.config.fishing.lavaScanInterval == 0) {
-			tick = 0;
-			if (event.phase != TickEvent.Phase.END ) return; //|| !inPrecursor()) return;
+			if (isEnabled() && tick % NotEnoughUpdates.INSTANCE.config.esp.lavaScanInterval == 0) {
+				tick = 0;
+				if (event.phase != TickEvent.Phase.END) return; //|| !inPrecursor()) return;
 
-			Thread t = new Thread(() -> {
-				 final Set<BlockPos> blockList = Collections.newSetFromMap(new LinkedHashMap<BlockPos, Boolean>() {
-					protected boolean removeEldestEntry(Map.Entry<BlockPos, Boolean> eldest) {
-						return size() > NotEnoughUpdates.INSTANCE.config.fishing.lavaLimit;
+				Thread t = new Thread(() -> {
+					try {
+						final Set<BlockPos> blockList = Collections.newSetFromMap(new LinkedHashMap<BlockPos, Boolean>() {
+							protected boolean removeEldestEntry(Map.Entry<BlockPos, Boolean> eldest) {
+								return size() > NotEnoughUpdates.INSTANCE.config.esp.lavaLimit;
+							}
+						});
+
+						World w = Minecraft.getMinecraft().theWorld;
+						if (w == null) return;
+						BlockPos position = Minecraft.getMinecraft().thePlayer.getPosition();
+						radius = (int) NotEnoughUpdates.INSTANCE.config.esp.lavaScanRadius;
+						Vec3i vec = new Vec3i(radius, radius, radius);
+						blockList.clear();
+						for (BlockPos a : BlockPos.getAllInBox(position.add(vec), position.subtract(vec))) {
+							Block blockType = w.getBlockState(a).getBlock();
+							if ((blockType == Blocks.lava || blockType == Blocks.flowing_lava) && a.getY() > 64) {
+								blockList.add(a);
+							}
+						}
+						blockList.removeIf(it -> Minecraft.getMinecraft().thePlayer.getPosition().distanceSq(it) < 12);
+						synchronized (highlightBlockList) {
+							highlightBlockList.clear();
+							highlightBlockList.addAll(blockList);
+						}
+					}catch (Exception e){
+						Utils.addChatMessage(e.getMessage());
 					}
 				});
+				t.start();
+			}
+			tick += 1;
 
-				World w = Minecraft.getMinecraft().theWorld;
-				if (w == null) return;
-				BlockPos position = Minecraft.getMinecraft().thePlayer.getPosition();
-				radius = (int) NotEnoughUpdates.INSTANCE.config.fishing.lavaScanRadius;
-				Vec3i vec = new Vec3i(radius, radius, radius);
-				blockList.clear();
-				for (BlockPos a : BlockPos.getAllInBox(position.add(vec), position.subtract(vec))) {
-					Block blockType = w.getBlockState(a).getBlock();
-					if ((blockType == Blocks.lava || blockType == Blocks.flowing_lava) && a.getY() > 64) {
-						blockList.add(a);
-					}
-				}
-					blockList.removeIf(it -> Minecraft.getMinecraft().thePlayer.getPosition().distanceSq(it) < 12);
-				synchronized (highlightBlockList){
-					highlightBlockList.clear();
-					highlightBlockList.addAll(blockList);
-				}
-			});
-			t.start();
+
 		}
-		tick += 1;
-	}
 
 	public static LavaFishingESP getInstance() {
 		return INSTANCE;

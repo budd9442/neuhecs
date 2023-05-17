@@ -41,6 +41,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
+import scala.Console;
 
 import java.awt.*;
 import java.io.IOException;
@@ -65,7 +66,6 @@ public class FishingSkillOverlay
 	private float fishedPerSecondLast = 0;
 	private float fishedPerSecond = 0;
 	private final LinkedList<Integer> expertiseQueue = new LinkedList<>();
-	private int killDelay = 0;
 	private XPInformation.SkillInfo skillInfo = null;
 	private XPInformation.SkillInfo skillInfoLast = null;
 
@@ -351,6 +351,21 @@ public class FishingSkillOverlay
 
 				lineMap.put(1, levelStr.toString());
 				lineMap.put(2, EnumChatFormatting.AQUA + "Current XP: " + EnumChatFormatting.YELLOW + format.format(current));
+				try {
+					int count = 0;
+					for (int slot = 0; slot < Minecraft.getMinecraft().thePlayer.inventory.getSizeInventory(); slot++) {
+						ItemStack Stack = Minecraft.getMinecraft().thePlayer.inventory.getStackInSlot(slot);
+
+						if (Stack != null && Stack.getItem().equals(Items.rotten_flesh)) {
+							count += Stack.stackSize;
+						}
+
+					}
+
+					lineMap.put(7, "Worm Membranes: " + count);
+				}catch (Exception e){
+					Console.println(e.getMessage());
+				}
 				if (remaining < 0) {
 					lineMap.put(3, EnumChatFormatting.AQUA + "Remaining XP: " + EnumChatFormatting.YELLOW + "MAXED!");
 					lineMap.put(5, EnumChatFormatting.AQUA + "ETA: " + EnumChatFormatting.YELLOW + "MAXED!");
@@ -437,16 +452,16 @@ public class FishingSkillOverlay
 				if(NotEnoughUpdates.INSTANCE.config.fishing.autoWardrobe){
 					Minecraft.getMinecraft().thePlayer.sendChatMessage("/wardrobe");
 				}
-				if(Minecraft.getMinecraft().thePlayer.inventory.getCurrentItem().getItem().equals(Items.fishing_rod)) {
-					Utils.addChatMessage(ChatFormatting.WHITE + "Killing");
-					this.killDelay = 50;
-					final Timer killTimer = new Timer();
-					TimerTask task1 = new TimerTask() {
-						public void run() {
-							if ((Minecraft.getMinecraft()).thePlayer.getHeldItem().getItem() == Items.fishing_rod &&
-								NotEnoughUpdates.INSTANCE.config.fishing.autoFishing &&
-								NotEnoughUpdates.INSTANCE.config.fishing.autoKilling && !FishingHelper.paused) {
-								(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 1;
+				if(SBInfo.getInstance().getLocation().equals("crystal_hollows")) {
+					if (Minecraft.getMinecraft().thePlayer.inventory.getCurrentItem().getItem().equals(Items.fishing_rod) &&
+						NotEnoughUpdates.INSTANCE.config.fishing.autoFishing &&
+						NotEnoughUpdates.INSTANCE.config.fishing.autoKilling && !FishingHelper.paused) {
+						Utils.addChatMessage(ChatFormatting.WHITE + "Killing");
+						final Timer killTimer = new Timer();
+						TimerTask task1 = new TimerTask() {
+							public void run() {
+								Utils.addChatMessage("starting timer");
+								Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
 								FishingHelper.rightClick();
 								try {
 									Thread.sleep(1000L);
@@ -473,21 +488,25 @@ public class FishingSkillOverlay
 									}
 
 								}
+
+								lineMap.put(7,"Worm Membranes: "+count );
 								if (NotEnoughUpdates.INSTANCE.config.discord.wormWebhook) {
 									DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject()
 										.setTitle("Fishing helper")
 										.setDescription("Auto-Kill")
 										.setColor(Color.CYAN)
-										.setThumbnail("https://static.wikia.nocookie.net/minecraft_gamepedia/images/a/ac/Rotten_Flesh_JE3_BE2.png")
+										.setThumbnail(
+											"https://static.wikia.nocookie.net/minecraft_gamepedia/images/a/ac/Rotten_Flesh_JE3_BE2.png")
 										.addField("Worm Membranes", String.valueOf(count), true);
 									Utils.sendWebhook(embed);
 								}
 								killTimer.cancel();
 							}
-						}
-					};
-					killTimer.schedule(task1, 800L);
 
+						};
+						killTimer.schedule(task1, 800L);
+
+					}
 				}
 				float oldLevel = Minecraft.getMinecraft().gameSettings.getSoundLevel(SoundCategory.PLAYERS);
 				Minecraft.getMinecraft().gameSettings.setSoundLevel(SoundCategory.PLAYERS, 1);
@@ -500,6 +519,7 @@ public class FishingSkillOverlay
 					overlayStrings.add(lineMap.get(strIndex));
 				}
 			}
+
 			if (overlayStrings != null && overlayStrings.isEmpty()) overlayStrings = null;
 		}
 	}

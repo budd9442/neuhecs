@@ -67,4 +67,35 @@ public class TabListUtils {
 		}
 		return result;
 	}
+	public static List<String> getTabListPlayersUnprocessed() {
+		List<NetworkPlayerInfo> players =
+			playerOrdering.sortedCopy(Minecraft.getMinecraft().thePlayer.sendQueue.getPlayerInfoMap());
+
+		List<String> result = new ArrayList<>();
+
+		for (NetworkPlayerInfo info : players) {
+			String name = Minecraft.getMinecraft().ingameGUI.getTabList().getPlayerName(info);
+			result.add(name);
+		}
+		return result;
+	}
+	public static List<String> getTabListPlayersSkyblock() {
+		List<String> tabListPlayersFormatted = getTabListPlayersUnprocessed();
+		List<String> playerList = new ArrayList<>();
+		tabListPlayersFormatted.remove(0); // remove "Players (x)"
+		String firstPlayer = null;
+		for(String s : tabListPlayersFormatted) {
+			int a = s.indexOf("]");
+			if(a == -1) continue;
+			if (s.length() < a + 2) continue;
+
+			s = s.substring(a + 2).replaceAll("§([0-9]|[a-z])", "").replace("♲", "").trim();
+			if(firstPlayer == null)
+				firstPlayer = s;
+			else if(s.equals(firstPlayer)) // it returns two copy of the player list for some reason
+				break;
+			playerList.add(s);
+		}
+		return playerList;
+	}
 }

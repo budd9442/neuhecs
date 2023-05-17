@@ -35,6 +35,7 @@ import io.github.moulberry.notenoughupdates.miscgui.GuiInvButtonEditor;
 import io.github.moulberry.notenoughupdates.miscgui.NEUOverlayPlacements;
 import io.github.moulberry.notenoughupdates.options.customtypes.NEUDebugFlag;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Discord;
+import io.github.moulberry.notenoughupdates.options.seperateSections.ESP;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Garden;
 import io.github.moulberry.notenoughupdates.options.seperateSections.MacroSafety;
 import io.github.moulberry.notenoughupdates.options.seperateSections.WorldConfig;
@@ -196,6 +197,12 @@ public class NEUConfig extends Config {
 	)
 	public MacroSafety macroSafety = new MacroSafety();
 
+	@Expose
+	@Category(
+		name = "ESP",
+		desc = "ESP Configuration"
+	)
+	public ESP esp = new ESP();
 	@Expose
 	@Category(
 		name = "Discord",

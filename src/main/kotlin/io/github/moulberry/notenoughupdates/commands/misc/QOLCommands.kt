@@ -71,11 +71,11 @@ class QOLCommands {
         event.command("lavaesp","lesp" ) {
             val enable = thenLiteralExecute("on") {
                 reply("${DARK_PURPLE}Enabled lava ESP!")
-                NotEnoughUpdates.INSTANCE.config.fishing.lavaESP=true
+                NotEnoughUpdates.INSTANCE.config.esp.lavaESP=true
             }
             thenLiteral("on") { redirect(enable) }
             val disable = thenLiteralExecute("off") {
-                NotEnoughUpdates.INSTANCE.config.fishing.lavaESP=false
+                NotEnoughUpdates.INSTANCE.config.esp.lavaESP=false
                 reply("${DARK_PURPLE}Disabled lava ESP!")
             }
             thenLiteral("off") { redirect(disable) }

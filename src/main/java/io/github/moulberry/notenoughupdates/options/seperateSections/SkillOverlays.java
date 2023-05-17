@@ -246,11 +246,12 @@ public class SkillOverlays {
 			//"\u00a7bYaw: \u00a7e68.25\u00a7l\u1D52",
 			"\u00a7bETA: \u00a7e13h12m",
 			//"\u00a7bExpertise Progress: \u00a7e7,945/10,000",
-			"\u00a7bTimer: \u00a7e1m15s"
+			"\u00a7bTimer: \u00a7e1m15s",
+			"\u00a7bWorm Membranes: \u00a7e0"
 		}
 	)
 	@ConfigAccordionId(id = 3)
-	public List<Integer> fishingText = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
+	public List<Integer> fishingText = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7));
 
 	@Expose
 	@ConfigOption(

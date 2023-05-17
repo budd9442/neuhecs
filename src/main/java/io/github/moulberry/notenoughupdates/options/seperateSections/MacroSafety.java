@@ -76,7 +76,7 @@ public class MacroSafety {
 
 	@Expose
 	@ConfigOption(name = "Minimum Click delay ", desc = "")
-	@ConfigEditorSlider(minValue = 10, maxValue = 1000, minStep = 100)
+	@ConfigEditorSlider(minValue = 10, maxValue = 3000, minStep = 200)
 	public int minDelay = 250;
 
 	// ---------------------------------------------- F I S H I N G -------------------------------------------------------------------
