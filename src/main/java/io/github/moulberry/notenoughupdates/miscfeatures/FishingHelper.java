@@ -483,7 +483,7 @@ public class FishingHelper {
 			scannerTicks++;
 			fails = warningState == PlayerWarningState.NOTHING ? fails : 0;
 			ItemStack helditem = Minecraft.getMinecraft().thePlayer.getHeldItem();
-			if(NotEnoughUpdates.INSTANCE.config.fishing.antiAFK && helditem!=null) {
+			if(helditem!=null){
 				if (Minecraft.getMinecraft().thePlayer.fishEntity != null && helditem.getItem()==Items.fishing_rod) {
 					notFishingCount=0;
 					if (warningState == PlayerWarningState.NOTHING && NotEnoughUpdates.INSTANCE.config.fishing.timeout > 0) {
@@ -505,7 +505,7 @@ public class FishingHelper {
 							t.start();
 
 						}
-					}
+
 					if (fails > 4) {
 						Utils.addChatMessage("Too many failed attempts! Disabling");
 						clickQueue = 0;
@@ -520,7 +520,7 @@ public class FishingHelper {
 					notFishingCount=0;
 					rightClick();
 				}
-			}
+			}}
 
 			if (buildupSoundDelay > 0) buildupSoundDelay--;
 			if (clickQueue > 0 &&
