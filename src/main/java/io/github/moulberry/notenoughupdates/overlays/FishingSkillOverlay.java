@@ -466,14 +466,13 @@ public class FishingSkillOverlay
 						final Timer killTimer = new Timer();
 						TimerTask task1 = new TimerTask() {
 							public void run() {
-								Utils.addChatMessage("starting timer");
-								Minecraft.getMinecraft().thePlayer.inventory.currentItem = 1;
+								Minecraft.getMinecraft().thePlayer.inventory.currentItem = NotEnoughUpdates.INSTANCE.config.fishing.weaponSlot;
 								FishingHelper.rightClick();
 								try {
 									Thread.sleep(1000L);
 								} catch (InterruptedException e) {
 								}
-								(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = 0;
+								(Minecraft.getMinecraft()).thePlayer.inventory.currentItem = NotEnoughUpdates.INSTANCE.config.fishing.rodSlot;
 								try {
 									Thread.sleep(800L);
 								} catch (InterruptedException e) {

@@ -92,6 +92,30 @@ public class Fishing {
 	@ConfigAccordionId(id = 9)
 	public boolean autoKilling = false;
 	@Expose
+	@ConfigOption(
+		name = "Fishing rod slot",
+		desc = "Slot numbers start with 0 ( First slot is 0, second is 1.. )"
+	)
+	@ConfigEditorSlider(
+		minValue = 0,
+		maxValue = 1,
+		minStep = 8
+	)
+	@ConfigAccordionId(id = 9)
+	public int rodSlot = 0;
+	@Expose
+	@ConfigOption(
+		name = "Weapon slot",
+		desc = "Any weapon with AOE ability works ( Hype, Yeti, Fire fury.. )"
+	)
+	@ConfigEditorSlider(
+		minValue = 0,
+		maxValue = 8,
+		minStep = 1
+	)
+	@ConfigAccordionId(id = 9)
+	public int weaponSlot = 1;
+	@Expose
 	@ConfigOption(name = "Auto renew", desc = "Renews the Crystal Hollows pass automatically")
 	@ConfigEditorBoolean
 	@ConfigAccordionId(id = 9)
