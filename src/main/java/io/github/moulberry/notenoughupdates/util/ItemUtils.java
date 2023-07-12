@@ -19,11 +19,13 @@
 
 package io.github.moulberry.notenoughupdates.util;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.moulberry.notenoughupdates.NotEnoughUpdates;
+import io.github.moulberry.notenoughupdates.core.util.StringUtils;
 import io.github.moulberry.notenoughupdates.listener.ItemTooltipListener;
 import io.github.moulberry.notenoughupdates.miscfeatures.PetInfoOverlay;
 import io.github.moulberry.notenoughupdates.profileviewer.GuiProfileViewer;
@@ -36,16 +38,34 @@ import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
 public class ItemUtils {
+	private static final Gson smallPrintingGson = new Gson();
+
+	public static ItemStack createSkullItemStack(String displayName, String uuid, String skinAbsoluteUrl) {
+		JsonObject object = new JsonObject();
+		JsonObject textures = new JsonObject();
+		JsonObject skin = new JsonObject();
+		skin.addProperty("url", skinAbsoluteUrl);
+		textures.add("SKIN", skin);
+		object.add("textures", textures);
+		String json = smallPrintingGson.toJson(object);
+		return Utils.createSkull(
+			displayName,
+			uuid,
+			Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8))
+		);
+	}
 
 	public static ItemStack getCoinItemStack(double coinAmount) {
 		String uuid = "2070f6cb-f5db-367a-acd0-64d39a7e5d1b";
@@ -62,7 +82,7 @@ public class ItemUtils {
 				"ewogICJ0aW1lc3RhbXAiIDogMTYzNTk1NzQ4ODQxNywKICAicHJvZmlsZUlkIiA6ICJmNThkZWJkNTlmNTA0MjIyOGY2MDIyMjExZDRjMTQwYyIsCiAgInByb2ZpbGVOYW1lIiA6ICJ1bnZlbnRpdmV0YWxlbnQiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2I5NTFmZWQ2YTdiMmNiYzIwMzY5MTZkZWM3YTQ2YzRhNTY0ODE1NjRkMTRmOTQ1YjZlYmMwMzM4Mjc2NmQzYiIsCiAgICAgICJtZXRhZGF0YSIgOiB7CiAgICAgICAgIm1vZGVsIiA6ICJzbGltIgogICAgICB9CiAgICB9CiAgfQp9";
 		}
 		ItemStack skull = Utils.createSkull(
-			"§r§6" + NumberFormat.getInstance().format(coinAmount) + " Coins",
+			"§r§6" + StringUtils.formatNumber(coinAmount) + " Coins",
 			uuid,
 			texture
 		);
@@ -119,6 +139,7 @@ public class ItemUtils {
 	}
 
 	public static List<String> getLore(ItemStack is) {
+		if (is == null) return new ArrayList<>();
 		return getLore(is.getTagCompound());
 	}
 
@@ -185,6 +206,13 @@ public class ItemUtils {
 			text = text.replace(search, replacement.getValue());
 		}
 		return text;
+	}
+
+	public static NBTTagCompound getExtraAttributes(ItemStack itemStack) {
+		NBTTagCompound tag = getOrCreateTag(itemStack);
+		NBTTagCompound extraAttributes = tag.getCompoundTag("ExtraAttributes");
+		tag.setTag("ExtraAttributes", extraAttributes);
+		return extraAttributes;
 	}
 
 	public static ItemStack createPetItemstackFromPetInfo(PetInfoOverlay.Pet currentPet) {

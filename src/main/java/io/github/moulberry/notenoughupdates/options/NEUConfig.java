@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 NotEnoughUpdates contributors
+ * Copyright (C) 2022-2023 NotEnoughUpdates contributors
  *
  * This file is part of NotEnoughUpdates.
  *
@@ -30,15 +30,11 @@ import io.github.moulberry.notenoughupdates.core.config.annotations.Category;
 import io.github.moulberry.notenoughupdates.core.config.gui.GuiPositionEditor;
 import io.github.moulberry.notenoughupdates.dungeons.GuiDungeonMapEditor;
 import io.github.moulberry.notenoughupdates.miscfeatures.FairySouls;
+import io.github.moulberry.notenoughupdates.miscfeatures.IQTest;
 import io.github.moulberry.notenoughupdates.miscgui.GuiEnchantColour;
 import io.github.moulberry.notenoughupdates.miscgui.GuiInvButtonEditor;
 import io.github.moulberry.notenoughupdates.miscgui.NEUOverlayPlacements;
 import io.github.moulberry.notenoughupdates.options.customtypes.NEUDebugFlag;
-import io.github.moulberry.notenoughupdates.options.seperateSections.Discord;
-import io.github.moulberry.notenoughupdates.options.seperateSections.ESP;
-import io.github.moulberry.notenoughupdates.options.seperateSections.Garden;
-import io.github.moulberry.notenoughupdates.options.seperateSections.MacroSafety;
-import io.github.moulberry.notenoughupdates.options.seperateSections.WorldConfig;
 import io.github.moulberry.notenoughupdates.options.seperateSections.AHGraph;
 import io.github.moulberry.notenoughupdates.options.seperateSections.AHTweaks;
 import io.github.moulberry.notenoughupdates.options.seperateSections.AccessoryBag;
@@ -46,21 +42,24 @@ import io.github.moulberry.notenoughupdates.options.seperateSections.ApiData;
 import io.github.moulberry.notenoughupdates.options.seperateSections.BazaarTweaks;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Calendar;
 import io.github.moulberry.notenoughupdates.options.seperateSections.CustomArmour;
+import io.github.moulberry.notenoughupdates.options.seperateSections.Discord;
 import io.github.moulberry.notenoughupdates.options.seperateSections.DungeonMapConfig;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Dungeons;
+import io.github.moulberry.notenoughupdates.options.seperateSections.ESP;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Enchanting;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Fishing;
+import io.github.moulberry.notenoughupdates.options.seperateSections.Garden;
 import io.github.moulberry.notenoughupdates.options.seperateSections.ImprovedSBMenu;
 import io.github.moulberry.notenoughupdates.options.seperateSections.InventoryButtons;
 import io.github.moulberry.notenoughupdates.options.seperateSections.ItemOverlays;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Itemlist;
 import io.github.moulberry.notenoughupdates.options.seperateSections.LocationEdit;
+import io.github.moulberry.notenoughupdates.options.seperateSections.MacroSafety;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Mining;
 import io.github.moulberry.notenoughupdates.options.seperateSections.MinionHelper;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Misc;
 import io.github.moulberry.notenoughupdates.options.seperateSections.MiscOverlays;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Museum;
-import io.github.moulberry.notenoughupdates.options.seperateSections.NeuAuctionHouse;
 import io.github.moulberry.notenoughupdates.options.seperateSections.Notifications;
 import io.github.moulberry.notenoughupdates.options.seperateSections.PetOverlay;
 import io.github.moulberry.notenoughupdates.options.seperateSections.ProfileViewer;
@@ -92,8 +91,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class NEUConfig extends Config {
-
-
 	public void editOverlay() {
 		final LinkedHashMap<TextOverlay, Position> overlayPositions = new LinkedHashMap<TextOverlay, Position>();
 		for (TextOverlay overlay : OverlayManager.textOverlays) {
@@ -101,10 +98,7 @@ public class NEUConfig extends Config {
 		}
 		GuiScreen savedGui = Minecraft.getMinecraft().currentScreen;
 		Minecraft.getMinecraft().displayGuiScreen(new GuiPositionEditor(overlayPositions, () -> {
-		}, () -> {
-		}, () -> {
-			NotEnoughUpdates.INSTANCE.openGui = savedGui;
-		}));
+		}, () -> NotEnoughUpdates.INSTANCE.openGui = savedGui));
 	}
 
 	@Override
@@ -178,11 +172,13 @@ public class NEUConfig extends Config {
 			case 26:
 				OverlayManager.powderGrindingOverlay.reset();
 				return;
+			case 27:
+				IQTest.testIQ();
+				return;
 			default:
 				System.err.printf("Unknown runnableId = %d in category %s%n", runnableId, activeConfigCategory);
 		}
 	}
-
 	@Expose
 	@Category(
 		name = "Fishing",
@@ -209,12 +205,6 @@ public class NEUConfig extends Config {
 		desc = "Discord alerts & webhook settings"
 	)
 	public Discord discord = new Discord();
-	@Expose
-	@Category(
-		name = "Skill Overlays",
-		desc = "Skill Overlays"
-	)
-	public SkillOverlays skillOverlays = new SkillOverlays();
 
 	@Expose
 	@Category(
@@ -279,7 +269,12 @@ public class NEUConfig extends Config {
 	)
 	public ItemOverlays itemOverlays = new ItemOverlays();
 
-
+	@Expose
+	@Category(
+		name = "Skill Overlays",
+		desc = "Skill Overlays"
+	)
+	public SkillOverlays skillOverlays = new SkillOverlays();
 
 	@Expose
 	@Category(
@@ -330,13 +325,6 @@ public class NEUConfig extends Config {
 		desc = "Garden"
 	)
 	public Garden garden = new Garden();
-
-	@Expose
-	@Category(
-		name = "NEU Auction House",
-		desc = "NEU Auction House"
-	)
-	public NeuAuctionHouse neuAuctionHouse = new NeuAuctionHouse();
 
 	@Expose
 	@Category(
@@ -396,7 +384,7 @@ public class NEUConfig extends Config {
 
 	@Expose
 	@Category(
-		name = "AH/BZ Graph",
+		name = "Price Graph",
 		desc = "Graph of auction and bazaar prices"
 	)
 	public AHGraph ahGraph = new AHGraph();
@@ -546,7 +534,6 @@ public class NEUConfig extends Config {
 			add("/storage:Storage:CHEST");
 			add("/wardrobe:Wardrobe:LEATHER_CHESTPLATE");
 			add("/pets:Pets:BONE");
-			add("neuah:NEU Auction House:GOLD_BLOCK");
 			add("/bz:Bazaar:GOLD_BARDING");
 		}};
 	}
@@ -614,7 +601,7 @@ public class NEUConfig extends Config {
 		@Expose
 		public long dailyMithrilPowerCompleted = 0L;
 		@Expose
-		public HashMap<String, Boolean> unlockedWarpScrolls = new HashMap<>();
+		public Set<String> nonUnlockedWarpScrolls = new HashSet<>();
 		@Expose
 		public long dailyHeavyPearlCompleted = 0L;
 		@Expose

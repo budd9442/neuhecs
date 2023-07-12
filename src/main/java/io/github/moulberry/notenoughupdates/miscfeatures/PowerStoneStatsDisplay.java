@@ -19,6 +19,7 @@
 
 package io.github.moulberry.notenoughupdates.miscfeatures;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.github.moulberry.notenoughupdates.NotEnoughUpdates;
 import io.github.moulberry.notenoughupdates.autosubscribe.NEUAutoSubscribe;
@@ -38,15 +39,12 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
 @NEUAutoSubscribe
 public class PowerStoneStatsDisplay {
 	private static PowerStoneStatsDisplay instance = null;
-	private final NumberFormat format = NumberFormat.getInstance(Locale.US);
 	private boolean dirty = true;
 
 	public static PowerStoneStatsDisplay getInstance() {
@@ -59,16 +57,14 @@ public class PowerStoneStatsDisplay {
 	@SubscribeEvent
 	public void onProfileDataLoaded(ProfileDataLoadedEvent event) {
 		JsonObject profileInfo = event.getProfileInfo();
-
 		if (profileInfo == null) return;
 
-		JsonObject inventoryInfo = ProfileViewerUtils.readInventoryInfo(profileInfo, "talisman_bag");
+		JsonArray inventoryInfo = ProfileViewerUtils.readInventoryInfo(profileInfo, "talisman_bag");
 		if (inventoryInfo == null) return;
 
 		NEUConfig.HiddenProfileSpecific configProfileSpecific = NotEnoughUpdates.INSTANCE.config.getProfileSpecific();
 		if (configProfileSpecific == null) return;
-		int powerAmount = ProfileViewerUtils.getMagicalPower(inventoryInfo, profileInfo);
-		configProfileSpecific.magicalPower = powerAmount;
+		configProfileSpecific.magicalPower = ProfileViewerUtils.getMagicalPower(inventoryInfo, profileInfo);
 	}
 
 	@SubscribeEvent
@@ -92,8 +88,7 @@ public class PowerStoneStatsDisplay {
 					String rawNumber = line.split("§6")[1].replace(",", "");
 					NEUConfig.HiddenProfileSpecific configProfileSpecific = NotEnoughUpdates.INSTANCE.config.getProfileSpecific();
 					if (configProfileSpecific == null) return;
-					int magicalPower = Integer.parseInt(rawNumber);
-					configProfileSpecific.magicalPower = magicalPower;
+					configProfileSpecific.magicalPower = Integer.parseInt(rawNumber);
 				}
 			}
 		}
@@ -106,84 +101,84 @@ public class PowerStoneStatsDisplay {
 		}
 	}
 
-//	@SubscribeEvent
-//	public void onItemTooltipLow(ItemTooltipEvent event) {
-//		if (NotEnoughUpdates.INSTANCE.config.tooltipTweaks.powerStoneStats) return;
-//
-//		ItemStack itemStack = event.itemStack;
-//		if (itemStack == null) return;
-//		List<String> lore = ItemUtils.getLore(itemStack);
-//
-//		boolean isPowerStone = false;
-//		for (String line : lore) {
-//			if (line.equals("§8Power Stone")) {
-//				isPowerStone = true;
-//				break;
-//			}
-//		}
-//
-//		if (!isPowerStone) return;
-//
-//		NEUConfig.HiddenProfileSpecific configProfileSpecific = NotEnoughUpdates.INSTANCE.config.getProfileSpecific();
-//		if (configProfileSpecific == null) return;
-//
-//		int magicalPower = configProfileSpecific.magicalPower;
-//		if (magicalPower < 1) return;
-//
-//		double scaledMagicalPower = scalePower(magicalPower);
-//		double scaledCurrentPower = 0.0;
-//
-//		int index = 0;
-//		boolean foundMagicalPower = false;
-//		for (String line : new LinkedList<>(lore)) {
-//			index++;
-//			line = line.replace("§k", "");
-//
-//			if (line.startsWith("§7At ")) {
-//
-//				String rawNumber = StringUtils.substringBetween(StringUtils.cleanColour(line), "At ", " Magical");
-//				if (rawNumber == null) return;
-//
-//				//This ignores old repo entries in the item browser from neu
-//				if (rawNumber.equals("mmm")) return;
-//
-//				try {
-//					scaledCurrentPower = scalePower(StringUtils.cleanAndParseInt(rawNumber));
-//				} catch (NumberFormatException ignored) {
-//					return;
-//				}
-//
-//				event.toolTip.set(index, "§7At §6" + format.format((double) magicalPower) + " Magical Power§7:");
-//				foundMagicalPower = true;
-//				continue;
-//			}
-//
-//			if (!foundMagicalPower) continue;
-//
-//			String cleanLine = StringUtils.cleanColour(line);
-//			if (cleanLine.equals("")) {
-//				break;
-//			}
-//
-//			for (String operator : new String[]{"+", "-"}) {
-//				if (!cleanLine.startsWith(operator)) continue;
-//				String rawStat = StringUtils.cleanColour(StringUtils.substringBetween(line, operator, " "));
-//
-//				double currentStat;
-//				try {
-//					currentStat = 0.0 + StringUtils.cleanAndParseInt(rawStat.substring(0, rawStat.length() - 1));
-//				} catch (NumberFormatException ignored) {
-//					continue;
-//				}
-//				double realStat = (currentStat / scaledCurrentPower) * scaledMagicalPower;
-//
-//				String format = this.format.format((double) Math.round(realStat));
-//				format += rawStat.substring(rawStat.length() - 1);
-//
-//				event.toolTip.set(index, line.replace(rawStat, format));
-//			}
-//		}
-//	}
+	@SubscribeEvent
+	public void onItemTooltipLow(ItemTooltipEvent event) {
+		if (!NotEnoughUpdates.INSTANCE.config.tooltipTweaks.powerStoneStats) return;
+
+		ItemStack itemStack = event.itemStack;
+		if (itemStack == null) return;
+		List<String> lore = ItemUtils.getLore(itemStack);
+
+		boolean isPowerStone = false;
+		for (String line : lore) {
+			if (line.equals("§8Power Stone")) {
+				isPowerStone = true;
+				break;
+			}
+		}
+
+		if (!isPowerStone) return;
+
+		NEUConfig.HiddenProfileSpecific configProfileSpecific = NotEnoughUpdates.INSTANCE.config.getProfileSpecific();
+		if (configProfileSpecific == null) return;
+
+		int magicalPower = configProfileSpecific.magicalPower;
+		if (magicalPower < 1) return;
+
+		double scaledMagicalPower = scalePower(magicalPower);
+		double scaledCurrentPower = 0.0;
+
+		int index = 0;
+		boolean foundMagicalPower = false;
+		for (String line : new LinkedList<>(lore)) {
+			index++;
+			line = line.replace("§k", "");
+
+			if (line.startsWith("§7At ")) {
+
+				String rawNumber = StringUtils.substringBetween(StringUtils.cleanColour(line), "At ", " Magical");
+				if (rawNumber == null) return;
+
+				//This ignores old repo entries in the item browser from neu
+				if (rawNumber.equals("mmm")) return;
+
+				try {
+					scaledCurrentPower = scalePower(StringUtils.cleanAndParseInt(rawNumber));
+				} catch (NumberFormatException ignored) {
+					return;
+				}
+
+				event.toolTip.set(index, "§7At §6" + StringUtils.formatNumber((double) magicalPower) + " Magical Power§7:");
+				foundMagicalPower = true;
+				continue;
+			}
+
+			if (!foundMagicalPower) continue;
+
+			String cleanLine = StringUtils.cleanColour(line);
+			if (cleanLine.equals("")) {
+				break;
+			}
+
+			for (String operator : new String[]{"+", "-"}) {
+				if (!cleanLine.startsWith(operator)) continue;
+				String rawStat = StringUtils.cleanColour(StringUtils.substringBetween(line, operator, " "));
+
+				double currentStat;
+				try {
+					currentStat = 0.0 + StringUtils.cleanAndParseInt(rawStat.substring(0, rawStat.length() - 1));
+				} catch (NumberFormatException ignored) {
+					continue;
+				}
+				double realStat = (currentStat / scaledCurrentPower) * scaledMagicalPower;
+
+				String format = StringUtils.formatNumber((double) Math.round(realStat));
+				format += rawStat.substring(rawStat.length() - 1);
+
+				event.toolTip.set(index, line.replace(rawStat, format));
+			}
+		}
+	}
 
 	private double scalePower(int magicalPower) {
 		return Math.pow(29.97 * (Math.log(0.0019 * magicalPower + 1)), 1.2);

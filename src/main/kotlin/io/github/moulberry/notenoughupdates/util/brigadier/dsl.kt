@@ -83,6 +83,7 @@ fun <T : ICommandSender, C : CommandContext<T>> C.reply(component: IChatComponen
     source.addChatMessage(ChatComponentText("§e[NEU] ").appendSibling(component))
 }
 
+@JvmOverloads
 fun <T : ICommandSender, C : CommandContext<T>> C.reply(text: String, block: ChatComponentText.() -> Unit = {}) {
     source.addChatMessage(ChatComponentText(text.split("\n").joinToString("\n") { "§e[NEU] $it" }).also(block))
 }
@@ -135,6 +136,15 @@ fun <T : ArgumentBuilder<DefaultSource, T>> T.thenLiteralExecute(
     thenLiteral(name) {
         thenExecute(block)
     }
+
+fun <T : ArgumentBuilder<DefaultSource, T>> T.thenRedirect(node: CommandNode<DefaultSource>): T {
+    node.children.forEach {
+        this.then(it)
+    }
+    forward(node.redirect, node.redirectModifier, node.isFork)
+    executes(node.command)
+    return this
+}
 
 fun <T : ArgumentBuilder<DefaultSource, T>, U : ArgumentBuilder<DefaultSource, U>> T.then(
     node: U,

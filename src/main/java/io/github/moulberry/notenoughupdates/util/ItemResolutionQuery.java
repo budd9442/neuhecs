@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 
 public class ItemResolutionQuery {
 
-	private static final Pattern ENCHANTED_BOOK_NAME_PATTERN = Pattern.compile("^((?:§.)+)([^§]+) ([IVXL]+)$");
+	private static final Pattern ENCHANTED_BOOK_NAME_PATTERN = Pattern.compile("^((?:§.)*)([^§]+) ([IVXL]+)$");
 	private static final String EXTRA_ATTRIBUTES = "ExtraAttributes";
 	private static final List<String> PET_RARITIES = Arrays.asList(
 		"COMMON",
@@ -120,6 +120,9 @@ public class ItemResolutionQuery {
 					break;
 				case "ABICASE":
 					resolvedName = resolvePhoneCase();
+					break;
+				case "PARTY_HAT_SLOTH":
+					resolvedName = resolveSlothHatName();
 					break;
 			}
 		}
@@ -203,9 +206,7 @@ public class ItemResolutionQuery {
 		String bestMatch = null;
 		int bestMatchLength = -1;
 		for (String internalName : findInternalNameCandidatesForDisplayName(cleanDisplayName)) {
-			var item = manager.createItem(internalName);
-			if (item.getDisplayName() == null) continue;
-			var cleanItemDisplayName = StringUtils.cleanColour(item.getDisplayName());
+			var cleanItemDisplayName = StringUtils.cleanColour(manager.getDisplayName(internalName));
 			if (cleanItemDisplayName.length() == 0) continue;
 			if (mayBeMangled
 				? !cleanDisplayName.contains(cleanItemDisplayName)
@@ -234,6 +235,7 @@ public class ItemResolutionQuery {
 		var titleWordMap = NotEnoughUpdates.INSTANCE.manager.titleWordMap;
 		var candidates = new HashSet<String>();
 		for (var partialDisplayName : cleanDisplayName.split(" ")) {
+			if ("".equals(partialDisplayName)) continue;
 			if (!titleWordMap.containsKey(partialDisplayName)) continue;
 			candidates.addAll(titleWordMap.get(partialDisplayName).keySet());
 		}
@@ -253,7 +255,7 @@ public class ItemResolutionQuery {
 		return null;
 	}
 
-	private String resolveEnchantmentByName(String name) {
+	public static String resolveEnchantmentByName(String name) {
 		Matcher matcher = ENCHANTED_BOOK_NAME_PATTERN.matcher(name);
 		if (!matcher.matches()) return null;
 		String format = matcher.group(1).toLowerCase(Locale.ROOT);
@@ -261,15 +263,27 @@ public class ItemResolutionQuery {
 		String romanLevel = matcher.group(3);
 		boolean ultimate = (format.contains("§l"));
 
-		return (ultimate ? "ULTIMATE_" : "")
-			+ enchantmentName.replace(" ", "_").toUpperCase(Locale.ROOT)
+		return ((ultimate && !enchantmentName.equals("Ultimate Wise")) ? "ULTIMATE_" : "")
+			+ turboCheck(enchantmentName).replace(" ", "_").replace("-", "_").toUpperCase(Locale.ROOT)
 			+ ";" + Utils.parseRomanNumeral(romanLevel);
+	}
+
+	private static String turboCheck(String text) {
+		if (text.equals("Turbo-Cocoa")) return "Turbo-Coco";
+		if (text.equals("Turbo-Cacti")) return "Turbo-Cactus";
+
+		return text;
 	}
 
 	private String resolveCrabHatName() {
 		int crabHatYear = getExtraAttributes().getInteger("party_hat_year");
 		String color = getExtraAttributes().getString("party_hat_color");
 		return "PARTY_HAT_CRAB_" + color.toUpperCase(Locale.ROOT) + (crabHatYear == 2022 ? "_ANIMATED" : "");
+	}
+
+	private String resolveSlothHatName() {
+		String emoji = getExtraAttributes().getString("party_hat_emoji");
+		return "PARTY_HAT_SLOTH_" + emoji.toUpperCase(Locale.ROOT);
 	}
 
 	private String resolvePhoneCase() {

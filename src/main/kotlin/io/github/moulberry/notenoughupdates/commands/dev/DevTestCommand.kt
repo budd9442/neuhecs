@@ -29,8 +29,9 @@ import io.github.moulberry.notenoughupdates.events.RegisterBrigadierCommandEvent
 import io.github.moulberry.notenoughupdates.miscfeatures.FishingHelper
 import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.CustomBiomes
 import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.LocationChangeEvent
-import io.github.moulberry.notenoughupdates.miscgui.GuiPriceGraph
 import io.github.moulberry.notenoughupdates.miscgui.minionhelper.MinionHelperManager
+import io.github.moulberry.notenoughupdates.miscgui.pricegraph.GuiPriceGraph
+import io.github.moulberry.notenoughupdates.util.ApiCache
 import io.github.moulberry.notenoughupdates.util.PronounDB
 import io.github.moulberry.notenoughupdates.util.SBInfo
 import io.github.moulberry.notenoughupdates.util.TabListUtils
@@ -47,6 +48,7 @@ import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import java.util.function.Predicate
 import kotlin.math.floor
+import kotlin.math.nextDown
 
 @NEUAutoSubscribe
 class DevTestCommand {
@@ -108,6 +110,13 @@ class DevTestCommand {
             requires {
                 canPlayerExecute(it)
             }
+            thenLiteralExecute("garden") {
+                val player = Minecraft.getMinecraft().thePlayer
+                reply("Is in Garden: ${SBInfo.getInstance().getLocation() == "garden"}")
+                val pp = player.position
+                reply("Plot X: ${floor((pp.getX() + 48) / 96F)}")
+                reply("Plot Z: ${floor((pp.getZ() + 48) / 96F)}")
+            }.withHelp("Show diagnostics information about the garden")
             thenLiteralExecute("profileinfo") {
                 val currentProfile = SBInfo.getInstance().currentProfile
                 val gamemode = SBInfo.getInstance().getGamemodeForProfile(currentProfile)
@@ -132,7 +141,8 @@ class DevTestCommand {
             thenLiteral("pricetest") {
                 thenArgument("item", StringArgumentType.string()) { item ->
                     thenExecute {
-                        NotEnoughUpdates.INSTANCE.openGui = GuiPriceGraph(this[item])
+                        NotEnoughUpdates.INSTANCE.openGui =
+                            GuiPriceGraph(this[item])
                     }
                 }.withHelp("Display the price graph for an item by id")
                 thenExecute {
@@ -178,6 +188,10 @@ class DevTestCommand {
                 NotEnoughUpdates.INSTANCE.saveConfig()
                 reply("Config saved")
             }.withHelp("Force sync the config to disk")
+            thenLiteralExecute("clearapicache") {
+                ApiCache.clear()
+                reply("Cleared API cache")
+            }.withHelp("Clear the API cache")
             thenLiteralExecute("searchmode") {
                 NotEnoughUpdates.INSTANCE.config.hidden.firstTimeSearchFocus = true
                 reply(AQUA.toString() + "I would never search")

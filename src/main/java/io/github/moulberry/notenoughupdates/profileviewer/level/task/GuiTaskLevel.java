@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 NotEnoughUpdates contributors
+ * Copyright (C) 2023 NotEnoughUpdates contributors
  *
  * This file is part of NotEnoughUpdates.
  *
@@ -17,16 +17,14 @@
  * along with NotEnoughUpdates. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.github.moulberry.notenoughupdates.auction;
+package io.github.moulberry.notenoughupdates.profileviewer.level.task;
 
-import net.minecraft.client.gui.GuiScreen;
+import com.google.gson.JsonObject;
+import io.github.moulberry.notenoughupdates.profileviewer.level.LevelPage;
 
-public class CustomAHGui extends GuiScreen {
-	public CustomAHGui() {
-		this.allowUserInput = true;
-	}
+public abstract class GuiTaskLevel {
+	public final LevelPage levelPage;
+	public GuiTaskLevel(LevelPage levelPage) {this.levelPage = levelPage;}
 
-	public boolean doesGuiPauseGame() {
-		return false;
-	}
+	public abstract void drawTask(JsonObject object, int mouseX, int mouseY, int guiLeft, int guiTop);
 }
