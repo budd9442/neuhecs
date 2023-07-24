@@ -31,14 +31,12 @@ import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.Custom
 import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.LocationChangeEvent
 import io.github.moulberry.notenoughupdates.miscgui.minionhelper.MinionHelperManager
 import io.github.moulberry.notenoughupdates.miscgui.pricegraph.GuiPriceGraph
-import io.github.moulberry.notenoughupdates.util.ApiCache
-import io.github.moulberry.notenoughupdates.util.PronounDB
-import io.github.moulberry.notenoughupdates.util.SBInfo
-import io.github.moulberry.notenoughupdates.util.TabListUtils
+import io.github.moulberry.notenoughupdates.util.*
 import io.github.moulberry.notenoughupdates.util.brigadier.*
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.command.ICommandSender
+import net.minecraft.entity.item.EntityArmorStand
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.launchwrapper.Launch
 import net.minecraft.util.ChatComponentText
@@ -48,7 +46,6 @@ import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import java.util.function.Predicate
 import kotlin.math.floor
-import kotlin.math.nextDown
 
 @NEUAutoSubscribe
 class DevTestCommand {
@@ -109,6 +106,30 @@ class DevTestCommand {
         val hook = event.command("neudevtest") {
             requires {
                 canPlayerExecute(it)
+            }
+            thenLiteral("joinServer") {
+                thenArgument("serverId", RestArgumentType) { serverId ->
+                    thenExecute {
+                        try {
+                            MC.sessionService.joinServer(
+                                MC.session.profile,
+                                MC.session.token,
+                                get(serverId)
+                            )
+                            reply("Joined server ${get(serverId)}")
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            reply("Failed to join server")
+                        }
+                    }
+                }.withHelp("Send a joinServer request to mojang (to test authentication with the cape server)")
+            }
+            thenLiteral("testsearch") {
+                thenArgument("name", RestArgumentType) { arg ->
+                    thenExecute {
+                        reply("Resolved ID: ${ItemResolutionQuery.findInternalNameByDisplayName(get(arg), true)}")
+                    }
+                }.withHelp("Search for an item id by name")
             }
             thenLiteralExecute("garden") {
                 val player = Minecraft.getMinecraft().thePlayer

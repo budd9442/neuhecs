@@ -242,36 +242,48 @@ public class SkyblockProfiles {
 				return null;
 			});
 
-		profileViewer.getManager().apiUtils
-			.request()
-			.url("https://soopy.dev/api/v2/player_networth/" + this.uuid)
-			.method("POST")
-			.postData("application/json", profilesArray.toString())
-			.requestJson()
-			.handle((jsonObject, throwable) -> {
-				if (jsonObject == null || !jsonObject.has("success") || !jsonObject.get("success").getAsBoolean()) {
-					for (Map.Entry<String, SkyblockProfile> entry : nameToProfile.entrySet()) {
-						entry.getValue().soopyNetworth = new SoopyNetworth(null);
-					}
-					updatingSoopyData.set(false);
+		long currentTime = System.currentTimeMillis();
+		if (ProfileViewerUtils.lastSoopyRequestTime.containsKey(uuid)) {
+			if (currentTime - ProfileViewerUtils.lastSoopyRequestTime.get(uuid) < 5 * 1000 * 60) {
+				if (ProfileViewerUtils.soopyDataCache.containsKey(uuid)) {
+					updateSoopyNetworth(ProfileViewerUtils.soopyDataCache.get(uuid));
+					callback.run();
+				}
+			}
+		} else {
+			ProfileViewerUtils.lastSoopyRequestTime.put(uuid, currentTime);
+			profileViewer.getManager().apiUtils
+				.request()
+				.url("https://soopy.dev/api/v2/player_networth/" + this.uuid)
+				.method("POST")
+				.postData("application/json", profilesArray.toString())
+				.requestJson()
+				.handle((jsonObject, throwable) -> {
+					updateSoopyNetworth(jsonObject);
+					ProfileViewerUtils.soopyDataCache.put(uuid, jsonObject);
 					callback.run();
 					return null;
-				}
+				});
+		}
+	}
 
-				for (Map.Entry<String, SkyblockProfile> entry : nameToProfile.entrySet()) {
-					String profileId = entry.getValue().getOuterProfileJson().get("profile_id").getAsString().replace("-", "");
-					JsonElement curProfileData = jsonObject.getAsJsonObject("data").get(profileId);
-					if (curProfileData == null) {
-						entry.getValue().soopyNetworth = new SoopyNetworth(null);
-					} else {
-						entry.getValue().soopyNetworth = new SoopyNetworth(curProfileData.getAsJsonObject());
-					}
+	private void updateSoopyNetworth(JsonObject jsonObject) {
+		if (jsonObject == null || !jsonObject.has("success") || !jsonObject.get("success").getAsBoolean()) {
+			for (Map.Entry<String, SkyblockProfile> entry : nameToProfile.entrySet()) {
+				entry.getValue().soopyNetworth = new SoopyNetworth(null);
+			}
+		} else {
+			for (Map.Entry<String, SkyblockProfile> entry : nameToProfile.entrySet()) {
+				String profileId = entry.getValue().getOuterProfileJson().get("profile_id").getAsString().replace("-", "");
+				JsonElement curProfileData = jsonObject.getAsJsonObject("data").get(profileId);
+				if (curProfileData == null) {
+					entry.getValue().soopyNetworth = new SoopyNetworth(null);
+				} else {
+					entry.getValue().soopyNetworth = new SoopyNetworth(curProfileData.getAsJsonObject());
 				}
-
-				updatingSoopyData.set(false);
-				callback.run();
-				return null;
-			});
+			}
+		}
+		updatingSoopyData.set(false);
 	}
 
 	public AtomicBoolean getUpdatingSkyblockProfilesState() {
@@ -629,8 +641,9 @@ public class SkyblockProfiles {
 		/**
 		 * NOTE: will NOT return null if skills api is disabled, use {@link SkyblockProfile#skillsApiEnabled()} instead
 		 * This can still return null if the leveling constant is not up-to-date
+		 *
 		 * @return Map containing skills, slayers, HOTM, dungeons & dungeon classes
- 		 */
+		 */
 		public Map<String, ProfileViewer.Level> getLevelingInfo() {
 			if (levelingInfo != null) {
 				return levelingInfo;
@@ -649,7 +662,10 @@ public class SkyblockProfiles {
 				float skillExperience = 0;
 				if (skillName.equals("social")) {
 					// Get the coop's social skill experience since social is a shared skill
-					for (Map.Entry<String, JsonElement> memberProfileJson : outerProfileJson.entrySet()) {
+					for (Map.Entry<String, JsonElement> memberProfileJson : Utils
+						.getElement(outerProfileJson, "members")
+						.getAsJsonObject()
+						.entrySet()) {
 						skillExperience += Utils.getElementAsFloat(
 							Utils.getElement(memberProfileJson.getValue(), "experience_skill_social2"),
 							0
@@ -741,7 +757,7 @@ public class SkyblockProfiles {
 					ProfileViewerUtils.getLevel(
 						Utils.getElement(leveling, "slayer_xp." + slayerName).getAsJsonArray(),
 						slayerExperience,
-						9,
+						slayerName.equals("vampire") ? 5 : 9,
 						true
 					)
 				);

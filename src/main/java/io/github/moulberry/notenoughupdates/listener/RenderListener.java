@@ -52,6 +52,7 @@ import io.github.moulberry.notenoughupdates.overlays.OverlayManager;
 import io.github.moulberry.notenoughupdates.overlays.RancherBootOverlay;
 import io.github.moulberry.notenoughupdates.overlays.TextOverlay;
 import io.github.moulberry.notenoughupdates.profileviewer.GuiProfileViewer;
+import io.github.moulberry.notenoughupdates.profileviewer.ProfileViewerUtils;
 import io.github.moulberry.notenoughupdates.util.ItemUtils;
 import io.github.moulberry.notenoughupdates.util.NotificationHandler;
 import io.github.moulberry.notenoughupdates.util.Rectangle;
@@ -777,7 +778,8 @@ public class RenderListener {
 							}
 						}
 					}
-					double kismetPrice = neu.manager.auctionManager.getLowestBin("KISMET_FEATHER");
+					JsonObject kismetBazaar = neu.manager.auctionManager.getBazaarInfo("KISMET_FEATHER");
+					double kismetPrice = (kismetBazaar != null && kismetBazaar.has("curr_buy")) ? kismetBazaar.get("curr_buy").getAsFloat() : 0;
 					String kismetStr = EnumChatFormatting.RED + formatCoins(kismetPrice) + " coins";
 					if (neu.config.dungeons.useKismetOnDungeonProfit)
 						profitLossBIN = kismetUsed ? profitLossBIN - kismetPrice : profitLossBIN;
@@ -874,11 +876,6 @@ public class RenderListener {
 	 */
 	@SubscribeEvent(priority = EventPriority.LOW)
 	public void onGuiScreenMouse(GuiScreenEvent.MouseInputEvent.Pre event) {
-		if (Mouse.getEventButtonState() && StorageManager.getInstance().onAnyClick()) {
-			event.setCanceled(true);
-			return;
-		}
-
 		final ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
 		final int scaledWidth = scaledresolution.getScaledWidth();
 		final int scaledHeight = scaledresolution.getScaledHeight();
@@ -945,6 +942,7 @@ public class RenderListener {
 								Utils.addChatMessage("${RED}Invalid player name/API key. Maybe the API is down? Try /api new.");
 							} else {
 								profile.resetCache();
+								ProfileViewerUtils.saveSearch(username);
 								NotEnoughUpdates.INSTANCE.openGui = new GuiProfileViewer(profile);
 							}
 						});

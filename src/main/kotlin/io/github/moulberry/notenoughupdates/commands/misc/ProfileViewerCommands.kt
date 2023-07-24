@@ -19,12 +19,12 @@
 
 package io.github.moulberry.notenoughupdates.commands.misc
 
-import com.mojang.brigadier.arguments.StringArgumentType.string
 import com.mojang.brigadier.context.CommandContext
 import io.github.moulberry.notenoughupdates.NotEnoughUpdates
 import io.github.moulberry.notenoughupdates.autosubscribe.NEUAutoSubscribe
 import io.github.moulberry.notenoughupdates.events.RegisterBrigadierCommandEvent
 import io.github.moulberry.notenoughupdates.profileviewer.GuiProfileViewer
+import io.github.moulberry.notenoughupdates.profileviewer.ProfileViewerUtils
 import io.github.moulberry.notenoughupdates.util.brigadier.*
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.OpenGlHelper
@@ -36,7 +36,11 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 @NEUAutoSubscribe
 class ProfileViewerCommands {
     companion object {
-        fun CommandContext<ICommandSender>.openPv(name: String) {
+        fun CommandContext<ICommandSender>.openPv(name: String?) {
+            if (!NotEnoughUpdates.INSTANCE.isOnSkyblock) {
+                Minecraft.getMinecraft().thePlayer.sendChatMessage("/pv ${name ?: ""}")
+                return
+            }
             if (!OpenGlHelper.isFramebufferEnabled()) {
                 reply("${RED}Some parts of the profile viewer do not work with OptiFine Fast Render. Go to ESC > Options > Video Settings > Performance > Fast Render to disable it.")
             }
@@ -46,11 +50,14 @@ class ProfileViewerCommands {
                 return
             }
 
-            NotEnoughUpdates.profileViewer.loadPlayerByName(name) { profile ->
+            NotEnoughUpdates.profileViewer.loadPlayerByName(
+                name ?: Minecraft.getMinecraft().thePlayer.name
+            ) { profile ->
                 if (profile == null) {
                     reply("${RED}Invalid player name/API key. Maybe the API is down? Try /api new.")
                 } else {
                     profile.resetCache()
+                    ProfileViewerUtils.saveSearch(name)
                     NotEnoughUpdates.INSTANCE.openGui = GuiProfileViewer(profile)
                 }
             }
@@ -64,9 +71,9 @@ class ProfileViewerCommands {
             event.command(name) {
                 thenExecute {
                     before()
-                    openPv(Minecraft.getMinecraft().thePlayer.name)
+                    openPv(null)
                 }
-                thenArgument("player", string()) { player ->
+                thenArgument("player", RestArgumentType) { player ->
                     suggestsList { Minecraft.getMinecraft().theWorld.playerEntities.map { it.name } }
                     thenExecute {
                         before()
